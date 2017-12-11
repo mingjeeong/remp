@@ -4,12 +4,14 @@ import java.io.Serializable;
 
 public class Input implements Serializable {
 	private String id;
-	private String name;
+	private String prId;
+	private String itName;
 	private int count;
 	private String state;
 	private String day;
 	private String delivery;
-	private String manufacturer;
+	private String fDay;
+	private String complete;
 	
 	/**
 	 * 
@@ -20,22 +22,27 @@ public class Input implements Serializable {
 
 	/**
 	 * @param id
-	 * @param name
+	 * @param prId
+	 * @param itName
 	 * @param count
 	 * @param state
 	 * @param day
 	 * @param delivery
-	 * @param manufacturer
+	 * @param fDay
+	 * @param complete
 	 */
-	public Input(String id, String name, int count, String state, String day, String delivery, String manufacturer) {
+	public Input(String id, String prId, String itName, int count, String state, String day, String delivery,
+			String fDay, String complete) {
 		super();
 		this.id = id;
-		this.name = name;
+		this.prId = prId;
+		this.itName = itName;
 		this.count = count;
 		this.state = state;
 		this.day = day;
 		this.delivery = delivery;
-		this.manufacturer = manufacturer;
+		this.fDay = fDay;
+		this.complete = complete;
 	}
 
 	/**
@@ -53,17 +60,31 @@ public class Input implements Serializable {
 	}
 
 	/**
-	 * @return the name
+	 * @return the prId
 	 */
-	public String getName() {
-		return name;
+	public String getPrId() {
+		return prId;
 	}
 
 	/**
-	 * @param name the name to set
+	 * @param prId the prId to set
 	 */
-	public void setName(String name) {
-		this.name = name;
+	public void setPrId(String prId) {
+		this.prId = prId;
+	}
+
+	/**
+	 * @return the itName
+	 */
+	public String getItName() {
+		return itName;
+	}
+
+	/**
+	 * @param itName the itName to set
+	 */
+	public void setItName(String itName) {
+		this.itName = itName;
 	}
 
 	/**
@@ -123,17 +144,30 @@ public class Input implements Serializable {
 	}
 
 	/**
-	 * @return the manufacturer
+	 * @return the fDay
 	 */
-	public String getManufacturer() {
-		return manufacturer;
+	public String getfDay() {
+		return fDay;
 	}
 
 	/**
-	 * @param manufacturer the manufacturer to set
+	 * @param fDay the fDay to set
 	 */
-	public void setManufacturer(String manufacturer) {
-		this.manufacturer = manufacturer;
+	public void setfDay(String fDay) {
+		this.fDay = fDay;
 	}
-	
+
+	/**
+	 * @return the complete
+	 */
+	public String getComplete() {
+		return complete;
+	}
+
+	/**
+	 * @param complete the complete to set
+	 */
+	public void setComplete(String complete) {
+		this.complete = complete;
+	}
 }

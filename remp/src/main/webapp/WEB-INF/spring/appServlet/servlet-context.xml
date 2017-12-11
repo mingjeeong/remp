@@ -21,23 +21,32 @@
 		<beans:property name="suffix" value=".jsp" />
 	</beans:bean>
 	
-	<context:component-scan base-package="com.remp.work.*" />
+	<context:component-scan base-package="com.remp.work.." />
 	
-		<beans:bean id="factory" class="com.remp.work.model.dao.FactoryDao" factory-method="getInstance">
-		<beans:constructor-arg>
-			<beans:map>
-				<beans:entry key="driver" value="oracle.jdbc.driver.OracleDriver"/>
-				<beans:entry key="url">
-					<beans:value>jdbc:oracle:thin:@localhost:1521:XE</beans:value>
-				</beans:entry>
-				<beans:entry key="username">
-					<beans:value>hr</beans:value>
-				</beans:entry>
-				<beans:entry key="password">
-					<beans:value>tiger</beans:value>
-				</beans:entry>
-			</beans:map>
-		</beans:constructor-arg>
+	<beans:bean id="factoryDao" class="com.remp.work.model.dao.FactoryDao" factory-method="getInstance">
+	<beans:constructor-arg>
+         <beans:map>
+            <beans:entry key="driver" value="oracle.jdbc.driver.OracleDriver"/>
+            <beans:entry key="url">
+               <beans:value>jdbc:oracle:thin:@localhost:1521:XE</beans:value>
+            </beans:entry>
+            <beans:entry key="username">
+               <beans:value>hr</beans:value>
+            </beans:entry>
+            <beans:entry key="password">
+               <beans:value>tiger</beans:value>
+            </beans:entry>
+         </beans:map>
+      </beans:constructor-arg>
+      </beans:bean>
+      
+    <beans:bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+    	<beans:property name="maxUploadSize" value="100000000"/>
+        <beans:property name="maxInMemorySize" value="100000000"/>
 	</beans:bean>
 	
+	<beans:bean id="jsonView" class="org.springframework.web.servlet.view.json.MappingJackson2JsonView"> 
+		<beans:property name="contentType" value="text/plain;charset=UTF-8" /> 
+	</beans:bean>
+
 </beans:beans>

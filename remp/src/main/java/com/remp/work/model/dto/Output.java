@@ -11,6 +11,7 @@ public class Output  implements Serializable {
 	private int count;
 	private String delivery;
 	private String day;
+	private String complete;
 	
 	/**
 	 * 
@@ -28,9 +29,10 @@ public class Output  implements Serializable {
 	 * @param count
 	 * @param delivery
 	 * @param day
+	 * @param complete
 	 */
 	public Output(String id, String prId, String name, String state, String outDay, int count, String delivery,
-			String day) {
+			String day, String complete) {
 		super();
 		this.id = id;
 		this.prId = prId;
@@ -40,6 +42,7 @@ public class Output  implements Serializable {
 		this.count = count;
 		this.delivery = delivery;
 		this.day = day;
+		this.complete = complete;
 	}
 
 	/**
@@ -153,5 +156,18 @@ public class Output  implements Serializable {
 	public void setDay(String day) {
 		this.day = day;
 	}
-	
+
+	/**
+	 * @return the complete
+	 */
+	public String getComplete() {
+		return complete;
+	}
+
+	/**
+	 * @param complete the complete to set
+	 */
+	public void setComplete(String complete) {
+		this.complete = complete;
+	}
 }

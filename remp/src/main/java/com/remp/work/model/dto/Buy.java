@@ -23,6 +23,7 @@ public class Buy implements Serializable {
 	private int stack;
 	private int debt;
 	private String refund;
+	private String complete;
 	
 	/**
 	 * 
@@ -52,10 +53,11 @@ public class Buy implements Serializable {
 	 * @param stack
 	 * @param debt
 	 * @param refund
+	 * @param complete
 	 */
 	public Buy(String id, String day, String cuId, String emId, String itId, int price, String start, String end,
 			String post, String addr, String addD, String method, String pay, String card, String trancfer,
-			String account, int total, int stack, int debt, String refund) {
+			String account, int total, int stack, int debt, String refund, String complete) {
 		super();
 		this.id = id;
 		this.day = day;
@@ -77,6 +79,7 @@ public class Buy implements Serializable {
 		this.stack = stack;
 		this.debt = debt;
 		this.refund = refund;
+		this.complete = complete;
 	}
 
 	/**
@@ -358,5 +361,18 @@ public class Buy implements Serializable {
 	public void setRefund(String refund) {
 		this.refund = refund;
 	}
-	
+
+	/**
+	 * @return the complete
+	 */
+	public String getComplete() {
+		return complete;
+	}
+
+	/**
+	 * @param complete the complete to set
+	 */
+	public void setComplete(String complete) {
+		this.complete = complete;
+	}
 }

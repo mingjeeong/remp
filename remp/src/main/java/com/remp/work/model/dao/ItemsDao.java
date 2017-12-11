@@ -14,9 +14,13 @@ import com.remp.work.model.dto.Item;
 
 @Repository
 public class ItemsDao {
-	@Autowired
-	@Qualifier("factory")
 	private FactoryDao factory;
+	
+	@Autowired
+	public void setFactoryDao(FactoryDao factory) {
+		this.factory = factory;
+	}
+	
 	/**
 	 * 고객렌탈 메인 화면 품목리스트 보여주기
 	 * @return
@@ -32,31 +36,34 @@ public class ItemsDao {
 			con = factory.getConnection();
 			pstmt = con.prepareStatement(sql);
 			rs = pstmt.executeQuery();
-			int id = 0;
+			String id = null;
 			String name = null;
 			String code = null;
 			int price = 0;
 			int acquisition = 0;
 			String image = null;
+			int period = 0;
+			String content = null;
+			String manufacturer = null;
 			
 			while(rs.next()) {
-				id = rs.getInt("IT_ID");
+				id = rs.getString("IT_ID");
 				name = rs.getString("IT_NAME");
 				code = rs.getString("IT_CODE");
 				price = rs.getInt("IT_PRICE");
 				acquisition = rs.getInt("IT_ACQUISITION");
 				image = rs.getString("IT_IMAGE");
-				list.add(new Item(id, name, code, price, acquisition, image));
+				period = rs.getInt("IT_period");
+				content = rs.getString("IT_CONTENT");
+				manufacturer = rs.getString("IT_MANUFACTURER");
+				list.add(new Item( id,  name,  code,  price,  acquisition,  period,  manufacturer,
+						 content,  image));
 			}
 			return list;
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}finally {
-			try {
-				factory.close(con, pstmt, rs);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			factory.close(con, pstmt, rs);
 		}
 		return null;
 	}
@@ -84,31 +91,34 @@ public class ItemsDao {
 			pstmt.setString(1, "%"+item.trim()+"%");
 			rs = pstmt.executeQuery();
 			
-			int id = 0;
+			String id = null;
 			String name = null;
 			String code = null;
 			int price = 0;
 			int acquisition = 0;
 			String image = null;
+			int period = 0;
+			String content = null;
+			String manufacturer = null;
 			
 			while(rs.next()) {
-				id = rs.getInt("IT_ID");
+				id = rs.getString("IT_ID");
 				name = rs.getString("IT_NAME");
 				code = rs.getString("IT_CODE");
 				price = rs.getInt("IT_PRICE");
 				acquisition = rs.getInt("IT_ACQUISITION");
 				image = rs.getString("IT_IMAGE");
-				list.add(new Item(id, name, code, price, acquisition, image));
+				period = rs.getInt("IT_period");
+				content = rs.getString("IT_CONTENT");
+				manufacturer = rs.getString("IT_MANUFACTURER");
+				list.add(new Item( id,  name,  code,  price,  acquisition,  period,  manufacturer,
+						 content,  image));
 			}
 			return list;
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}finally {
-			try {
-				factory.close(con, pstmt, rs);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			factory.close(con, pstmt, rs);
 		}
 		return null;
 	}
@@ -117,7 +127,7 @@ public class ItemsDao {
 	 * @param itemId
 	 * @return
 	 */
-	public Item getItem(int itemId) {
+	public Item getItem(String itemId) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
@@ -126,34 +136,37 @@ public class ItemsDao {
 		try {
 			con = factory.getConnection();
 			pstmt = con.prepareStatement(sql);
-			pstmt.setInt(1, itemId);
+			pstmt.setString(1, itemId);
 			rs = pstmt.executeQuery();
 			
-			int id = 0;
+			String id = null;
 			String name = null;
 			String code = null;
 			int price = 0;
 			int acquisition = 0;
 			String image = null;
+			int period = 0;
+			String content = null;
+			String manufacturer = null;
 			
 			while(rs.next()) {
-				id = rs.getInt("IT_ID");
+				id = rs.getString("IT_ID");
 				name = rs.getString("IT_NAME");
 				code = rs.getString("IT_CODE");
 				price = rs.getInt("IT_PRICE");
 				acquisition = rs.getInt("IT_ACQUISITION");
 				image = rs.getString("IT_IMAGE");
-				return new Item(id, name, code, price, acquisition, image);
+				period = rs.getInt("IT_period");
+				content = rs.getString("IT_CONTENT");
+				manufacturer = rs.getString("IT_MANUFACTURER");
+				return new Item( id,  name,  code,  price,  acquisition,  period,  manufacturer,
+						 content,  image);
 			}
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}finally {
-			try {
-				factory.close(con, pstmt, rs);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			factory.close(con, pstmt, rs);
 		}
 		return null;
 	}

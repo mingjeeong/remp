@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 public class Deprive implements Serializable {
 	private String id;
+	private String viId;
 	private String day;
 	private String cuId;
 	private String cuName;
@@ -22,6 +23,7 @@ public class Deprive implements Serializable {
 
 	/**
 	 * @param id
+	 * @param viId
 	 * @param day
 	 * @param cuId
 	 * @param cuName
@@ -31,10 +33,11 @@ public class Deprive implements Serializable {
 	 * @param engineerName
 	 * @param content
 	 */
-	public Deprive(String id, String day, String cuId, String cuName, String prId, String state, String engineerId,
-			String engineerName, String content) {
+	public Deprive(String id, String viId, String day, String cuId, String cuName, String prId, String state,
+			String engineerId, String engineerName, String content) {
 		super();
 		this.id = id;
+		this.viId = viId;
 		this.day = day;
 		this.cuId = cuId;
 		this.cuName = cuName;
@@ -57,6 +60,20 @@ public class Deprive implements Serializable {
 	 */
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	/**
+	 * @return the viId
+	 */
+	public String getViId() {
+		return viId;
+	}
+
+	/**
+	 * @param viId the viId to set
+	 */
+	public void setViId(String viId) {
+		this.viId = viId;
 	}
 
 	/**

@@ -1,3 +1,4 @@
+<%@page import="java.util.ArrayList"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
 <%@ page session="false" %>
@@ -5,18 +6,17 @@
 <head>
 	<title>Home</title>
 	<link rel="stylesheet" type="text/css" href="resources/css/bootstrap.css">
-	<link rel="stylesheet" type="text/css" href="resources/css/bootstrap-grid.css">
-	<link rel="stylesheet" type="text/css" href="resources/css/bootstrap-reboot.css">
 	<script src="resources/js/jquery-3.2.1.js"></script>
-	<script src="https://unpkg.com/popper.js"></script>
-	<script src="https://unpkg.com/tooltip.js"></script>
-	<script src="resources/js/bootstrap.bundle.js"></script>
+	<script src="resources/js/popper.js"></script>
 	<script src="resources/js/bootstrap.js"></script>
+	<script src="resources/js/core.js"></script>
 </head>
 <body>
 <h1>
-	Hello world!  
+	Hello world!
 </h1>
+
+<input id="from_date" type="date" onchange="setToDate(this.value)"><input id="to_date" type="date">
 
 <P>  The time on the server is ${serverTime}. </P>
 <button class="btn btn-primary">테스트!</button>

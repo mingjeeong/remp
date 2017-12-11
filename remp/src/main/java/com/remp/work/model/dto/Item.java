@@ -3,11 +3,14 @@ package com.remp.work.model.dto;
 import java.io.Serializable;
 
 public class Item implements Serializable {
-	private int id;
+	private String id;
 	private String name;
 	private String code;
 	private int price;
 	private int acquisition;
+	private int period;//기간
+	private String manufacturer;//제조사
+	private String content;//설명
 	private String image;
 	
 	/**
@@ -17,36 +20,50 @@ public class Item implements Serializable {
 		super();
 	}
 
-	/**
-	 * @param id
-	 * @param name
-	 * * @param code
-	 * @param price
-	 * @param acquisition
-	 * @param image
-	 */
-	public Item(int id, String name, String code, int price, int acquisition, String image) {
+	public Item(String id, String name, String code, int price, int acquisition, int period, String manufacturer,
+			String content, String image) {
 		super();
 		this.id = id;
 		this.name = name;
 		this.code = code;
 		this.price = price;
 		this.acquisition = acquisition;
+		this.period = period;
+		this.manufacturer = manufacturer;
+		this.content = content;
 		this.image = image;
 	}
 
-	/**
-	 * @return the id
-	 */
-	public int getId() {
+	public String getId() {
 		return id;
 	}
 
-	/**
-	 * @param id the id to set
-	 */
-	public void setId(int id) {
+	public void setId(String id) {
 		this.id = id;
+	}
+
+	public int getPeriod() {
+		return period;
+	}
+
+	public void setPeriod(int period) {
+		this.period = period;
+	}
+
+	public String getManufacturer() {
+		return manufacturer;
+	}
+
+	public void setManufacturer(String manufacturer) {
+		this.manufacturer = manufacturer;
+	}
+
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
 	}
 
 	/**

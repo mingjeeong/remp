@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 public class Fix implements Serializable {
 	private String id;
+	private String viId;
 	private String day;
 	private String cuId;
 	private String cuName;
@@ -20,9 +21,10 @@ public class Fix implements Serializable {
 	public Fix() {
 		super();
 	}
-	
+
 	/**
 	 * @param id
+	 * @param viId
 	 * @param day
 	 * @param cuId
 	 * @param cuName
@@ -33,10 +35,11 @@ public class Fix implements Serializable {
 	 * @param sort
 	 * @param content
 	 */
-	public Fix(String id, String day, String cuId, String cuName, String prId, String state, String engineerId,
-			String engineerName, String sort, String content) {
+	public Fix(String id, String viId, String day, String cuId, String cuName, String prId, String state,
+			String engineerId, String engineerName, String sort, String content) {
 		super();
 		this.id = id;
+		this.viId = viId;
 		this.day = day;
 		this.cuId = cuId;
 		this.cuName = cuName;
@@ -60,6 +63,20 @@ public class Fix implements Serializable {
 	 */
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	/**
+	 * @return the viId
+	 */
+	public String getViId() {
+		return viId;
+	}
+
+	/**
+	 * @param viId the viId to set
+	 */
+	public void setViId(String viId) {
+		this.viId = viId;
 	}
 
 	/**
@@ -187,5 +204,4 @@ public class Fix implements Serializable {
 	public void setContent(String content) {
 		this.content = content;
 	}
-	
 }

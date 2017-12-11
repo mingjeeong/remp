@@ -1,31 +1,44 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ page contentType="text/html; charset=UTF-8"%>
-<%@ page session="false"%>
+<%@ page session="true"%>
 <html>
 <head>
 <title>Home</title>
-<link rel="stylesheet" type="text/css" href="resources/css/bootstrap.css">
-<link rel="stylesheet" type="text/css" href="resources/css/bootstrap-grid.css">
-<link rel="stylesheet" type="text/css" href="resources/css/bootstrap-reboot.css">
-<script src="resources/js/jquery-3.2.1.js"></script>
-<script src="https://unpkg.com/popper.js"></script>
-<script src="https://unpkg.com/tooltip.js"></script>
-<script src="resources/js/bootstrap.bundle.js"></script>
-<script src="resources/js/bootstrap.js"></script>
-<script src="resources/js/core.js"></script>
+	<link rel="stylesheet" type="text/css" href="resources/css/sandstone/bootstrap.css">
+	<link rel="stylesheet" type="text/css" href="resources/css/core.css">
+	<link rel="stylesheet" type="text/css" href="resources/css/jquery-ui.css">
+	<script src="resources/js/jquery-3.2.1.js"></script>
+	<script src="resources/js/jquery.form.js"></script>
+	<script src="resources/js/jquery-ui.js"></script>
+	<script src="resources/js/popper.js"></script>
+	<script src="resources/js/bootstrap.bundle.js"></script>
+	<script src="resources/js/bootstrap.js"></script>
+	<script src="resources/js/core.js"></script>
+	<script src="http://dmaps.daum.net/map_js_init/postcode.v2.js"></script>
 </head>
 <body>
 	<!-- navi -->
 	<jsp:include page="/WEB-INF/views/structure/navi.jsp" />
+	
 	<!-- content -->
-	<div style="text-align: center; min-width: 100%; max-width: 600px; margin: 0px auto;">
-		<div style="min-width: 30%; min-height: 600px; background-color: red; display: inline-block;">
+	<div id="content" class="content_wrapper bd">
+		<div class="head bd-right">
 			<jsp:include page="${head}" />
 		</div>
-		<div style="min-width: 68%; min-height: 600px; background-color: red; display: inline-block;">
+		<div class="detail">
 			<jsp:include page="${detail}" />
 		</div>
 	</div>
+	
 	<!-- footer -->
+	<div class="content_wrapper">
+		<jsp:include page="/WEB-INF/views/structure/footer.jsp" />
+	</div>
+	
+	<script>
+		sessionStorage.setItem('userId','${sessionScope.userId}');
+		sessionStorage.setItem('userName','${sessionScope.userName}');
+		sessionStorage.setItem('userGrade','${sessionScope.userGrade}');
+	</script>
 </body>
 </html>

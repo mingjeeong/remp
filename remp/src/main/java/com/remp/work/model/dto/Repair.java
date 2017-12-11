@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class Repair implements Serializable {
 	private String id;
-	private String name;
+	private String itName;
 	private String prId;
 	private String engineerId;
 	private String engineerName;
@@ -20,10 +20,10 @@ public class Repair implements Serializable {
 	public Repair() {
 		super();
 	}
-	
+
 	/**
 	 * @param id
-	 * @param name
+	 * @param itName
 	 * @param prId
 	 * @param engineerId
 	 * @param engineerName
@@ -33,11 +33,11 @@ public class Repair implements Serializable {
 	 * @param content
 	 * @param parts
 	 */
-	public Repair(String id, String name, String prId, String engineerId, String engineerName, String sort,
+	public Repair(String id, String itName, String prId, String engineerId, String engineerName, String sort,
 			String state, String day, String content, String parts) {
 		super();
 		this.id = id;
-		this.name = name;
+		this.itName = itName;
 		this.prId = prId;
 		this.engineerId = engineerId;
 		this.engineerName = engineerName;
@@ -63,17 +63,17 @@ public class Repair implements Serializable {
 	}
 
 	/**
-	 * @return the name
+	 * @return the itName
 	 */
-	public String getName() {
-		return name;
+	public String getItName() {
+		return itName;
 	}
 
 	/**
-	 * @param name the name to set
+	 * @param itName the itName to set
 	 */
-	public void setName(String name) {
-		this.name = name;
+	public void setItName(String itName) {
+		this.itName = itName;
 	}
 
 	/**
@@ -187,5 +187,4 @@ public class Repair implements Serializable {
 	public void setParts(String parts) {
 		this.parts = parts;
 	}
-	
 }

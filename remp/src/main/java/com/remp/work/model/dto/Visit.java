@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class Visit implements Serializable{
 	private String id;
+	private String buyId;
+	private String itId;
 	private String name;
 	private String day;
 	private String mobile;
@@ -24,6 +26,8 @@ public class Visit implements Serializable{
 
 	/**
 	 * @param id
+	 * @param buyId
+	 * @param itId
 	 * @param name
 	 * @param day
 	 * @param mobile
@@ -35,10 +39,12 @@ public class Visit implements Serializable{
 	 * @param emId
 	 * @param complete
 	 */
-	public Visit(String id, String name, String day, String mobile, String post, String addr, String addD, String code,
-			String cuId, String emId, String complete) {
+	public Visit(String id, String buyId, String itId, String name, String day, String mobile, String post, String addr,
+			String addD, String code, String cuId, String emId, String complete) {
 		super();
 		this.id = id;
+		this.buyId = buyId;
+		this.itId = itId;
 		this.name = name;
 		this.day = day;
 		this.mobile = mobile;
@@ -63,6 +69,34 @@ public class Visit implements Serializable{
 	 */
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	/**
+	 * @return the buyId
+	 */
+	public String getBuyId() {
+		return buyId;
+	}
+
+	/**
+	 * @param buyId the buyId to set
+	 */
+	public void setBuyId(String buyId) {
+		this.buyId = buyId;
+	}
+
+	/**
+	 * @return the itId
+	 */
+	public String getItId() {
+		return itId;
+	}
+
+	/**
+	 * @param itId the itId to set
+	 */
+	public void setItId(String itId) {
+		this.itId = itId;
 	}
 
 	/**
@@ -204,5 +238,4 @@ public class Visit implements Serializable{
 	public void setComplete(String complete) {
 		this.complete = complete;
 	}
-	
 }

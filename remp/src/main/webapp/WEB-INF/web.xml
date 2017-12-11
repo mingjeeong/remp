@@ -6,7 +6,10 @@
 	<!-- The definition of the Root Spring Container shared by all Servlets and Filters -->
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
-		<param-value>/WEB-INF/spring/root-context.xml</param-value>
+		<param-value>
+			/WEB-INF/spring/root-context.xml
+			 /WEB-INF/spring/security-context.xml
+		</param-value>
 	</context-param>
 	
 	<!-- Creates the Spring Container shared by all Servlets and Filters -->
@@ -16,18 +19,18 @@
 	
 	<!-- encoding -->
 	<filter>
-      <filter-name>encodingFilter</filter-name>
-      <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
-      <init-param>
-         <param-name>encoding</param-name>
-         <param-value>UTF-8</param-value>
-      </init-param>
-   </filter>
-   
-   <filter-mapping>
-      <filter-name>encodingFilter</filter-name>
-      <url-pattern>/*</url-pattern>
-   </filter-mapping>
+		<filter-name>encoding</filter-name>
+		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+		<init-param>
+			<param-name>encoding</param-name>
+			<param-value>UTF-8</param-value>
+		</init-param>
+	</filter>
+	
+	<filter-mapping>
+		<filter-name>encoding</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
 
 	<!-- Processes application requests -->
 	<servlet>
@@ -44,5 +47,23 @@
 		<servlet-name>appServlet</servlet-name>
 		<url-pattern>/</url-pattern>
 	</servlet-mapping>
+	
+	<!-- by 이원호 -->
+	<servlet>
+		<description></description>
+		<display-name>authController</display-name>
+		<servlet-name>authController</servlet-name>
+		<servlet-class>com.remp.work.control.authController</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>authController</servlet-name>
+		<url-pattern>/authController</url-pattern>
+	</servlet-mapping>
+	
+	<!-- by 김재림 -->
+	<error-page>
+		<error-code>500</error-code>
+		<location>/WEB-INF/views/error.jsp</location>
+	</error-page>
 
 </web-app>

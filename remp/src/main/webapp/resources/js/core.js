@@ -1,18 +1,2491 @@
-onload = function () {
+$(document).ready(function() { // body onload와 겹쳐서 .ready로 변경
 	$("#rental").hide(0);
 	$("#asset").hide(0);
 	$("#EIS").hide(0);
 	$("#member").hide(0);
+	$("#tr_pwCheck").hide(0);
+})
+
+/* ======================================== by 김재림 ================================================= */
+
+/*
+ * ReMP에서 사용될 기본 자바스크립트 태그
+ * 작성자 : 김재림
+ * 버전 v 1.0
+ */
+
+/* 서브메뉴 열기 */
+/* 로그처리 */
+var operationMod = "debug";
+
+function debug(log) {
+	if (operationMod == "debug") {
+		console.log("[Debug] Message : " + log);
+	}
+}
+/* ------------------------- 네비게이션 컨트롤 ------------------------- */
+function getNavSubMenu(targetElement) {
+	var targetId = "#" + $(targetElement).data("module");
+	
+	if ($(targetId).css("display") == "block") {
+		$(targetId).slideUp('fast');
+		return;
+	}
+	
+	$("#rental").slideUp('fast');	
+	$("#asset").slideUp('fast');
+	$("#EIS").slideUp('fast');
+	$("#member").slideUp('fast');
+	$(targetId).slideDown('fast');
 }
 
-function getNavSubMenu(openId) {
-	$("#rental").hide(0);	
-	$("#asset").hide(0);
-	$("#EIS").hide(0);
-	$("#member").hide(0);
-	$("#"+openId).show(500); 
+function setNavSubMenu(takeElement) {
+	$(takeElement).slideUp('fast')
 }
-//비밀번호변경 확인
+
+/* ------------------------- UI 관련 ------------------------- */
+/* 메시지창
+ * 작성자 : 김재림
+ * 버  전 : v 1.2
+ */
+const MsgWindow = class MsgWindow {
+	/* 전역변수
+	 * windowType - 창타입
+	 * msgWindow - 메시지창 객체
+	 * msgWindowHead - 헤드영역
+	 * msgWindowDetail - 디테일영역
+	 * msgWindowAction - 액션영역
+	 */
+	//생성자
+	constructor(windowType) {
+		if (windowType == null) {
+			this.windowType == 'plain';
+		}
+		this.windowType = windowType.toLowerCase();
+	}
+	//창속성 기본 메시지창, violated : 정책위반창, Error : 에러창, Invalid : 무효창
+	setWindowType(windowType) {
+		if (windowType == null) {
+			this.windowType == 'plain';
+		}
+		this.windowType = windowType.toLowerCase();
+		this.msgWindowHead.removeAttr('class');
+		this.msgWindowHead.attr('class', 'msgWindowHead '+this.windowType);
+	}
+	//현재설정된 메시지창 타입
+	getWindowType() {
+		return this.windowType;
+	}
+	//타이틀 및 메시지내용 설정
+	setMessage(msgWindowHeadText, msgWindowDetialText) {
+		if (msgWindowHeadText == null) {
+			msgWindowHeadText == "정보"
+		}
+		if (this.windowType == null) {
+			this.windowType = "plain";
+		} else {
+			switch (this.windowType) {
+			case "violated":
+				msgWindowHeadText = "[정책위반] "+msgWindowHeadText;
+				break;
+			case "error":
+				msgWindowHeadText = "[오류] "+msgWindowHeadText;
+				break;
+			case "invalid":
+				msgWindowHeadText = "[무효] "+msgWindowHeadText;
+				break;
+			default:
+				msgWindowHeadText = "[메세지] "+msgWindowHeadText;
+				break;
+			}
+		}
+		if (msgWindowDetialText == null || msgWindowDetialText == "") {
+			this.msgWindowDetialText = "---------------------------------------메시지 영역---------------------------------------";
+		}
+		this.msgWindowHead = $('<div />', {class: 'msgWindowHead '+this.windowType, onclick: 'MsgWindow.onTop(this)'});
+		this.msgWindowDetail = $('<div />', {class: 'msgWindowDetail'});
+		$(this.msgWindowHead).append($('<span />', {class: 'msgWindowHead-text', text: msgWindowHeadText}));
+		$(this.msgWindowDetail).append($('<div />', {class: 'msgWindowDetail-text', text: msgWindowDetialText}));
+	}
+	//타이틀 및 메시지내용 출력
+	getMessage() {
+		return "제목 : "+this.msgWindowHeadText+", 내용 : "+this.msgWindowDetialText;
+	}
+	//버튼 설정
+	setButton(buttonText, callbackFn) {
+		if (this.msgWindowAction == null) {
+			this.msgWindowAction = $('<div />', {class: 'msgWindowAction'});
+		}
+		if (buttonText == null) {
+			buttonText == '확인';
+		}
+		if (callbackFn == null) {
+			callbackFn = this.remove();
+		}
+		$(this.msgWindowAction).append($('<input />', {class: 'btn btn-primary btn-sm msgBtn', type: 'button', value: buttonText, onclick: callbackFn}));
+	}
+	//화면에 창 설정하기
+	show() {
+		if (this.msgWindowHead == null || this.msgWindowDetail == null) {
+			this.setMessage(null, null);
+		}
+		$("body").append(this.createMsgWindow(this.windowType, this.msgWindowHead, this.msgWindowDetail));
+		$(this.msgWindowAction).children()[0].focus();
+	}
+	//화면에서 숨기기
+	static hide(takeElement) {
+		debug(takeElement);
+		$(takeElement).parents('div.msgWindow').fadeOut('fast');
+		setTimeout(function() {
+			$(takeElement).parents('div.msgWindow').remove();
+		}, '3000', takeElement);
+	}
+	//객체삭제
+	static remove(takeElement) {
+		$(takeElement).parents('div.msgWindow').remove();
+	}
+	//상단으로 가져오기
+	static onTop(takeElement) {
+		$('.msgWindow').css('z-index', 'auto');
+		$(takeElement).parents('.msgWindow').css('z-index', 1);
+	}
+	//메시지 객체 생성
+	createMsgWindow() {
+		this.msgWindow = $('<div />', {class: 'msgWindow'});
+		$(this.msgWindow).append(this.msgWindowHead);
+		$(this.msgWindow).append(this.msgWindowDetail);
+		$(this.msgWindow).append(this.msgWindowAction);
+		$(this.msgWindow).draggable();
+		return this.msgWindow;
+	}
+	
+	toString() {
+		return 'windowType : '+ this.windowType +
+			', msgWindowHead : '+ this.msgWindowHead +
+			', msgWindowDetail : '+ this.msgWindowDetail +
+			', msgWindowAction : '+ this.msgWindowAction;
+	}
+	//객체초기화
+	initialize() {
+		 this.windowType = null;
+		 this.msgWindow = null;
+		 this.msgWindowHead = null;
+		 this.msgWindowDetail = null;
+		 this.msgWindowAction = null;
+	}
+}
+
+/* ------------------------- 일반기능 ------------------------- */
+function setToDate(fromDateValue) {
+	$('#toDate').attr('min', fromDateValue);
+}
+
+function addToDate(takeElement) {
+	var fromDate = $('#fromDate').val().split('-');
+	debug(fromDate);
+	if (fromDate.length <= 1) {
+		var today = new Date();
+		var todayYear = today.getFullYear();
+		var todayMonth = today.getMonth() + 1;
+		todayMonth = (todayMonth < 10)? '0' + todayMonth: todayMonth;
+		var todayDay = today.getDate();
+		todayDay = (todayDay < 10)? '0' + todayDay: todayDay;
+		$('#fromDate').val(todayYear+'-'+todayMonth+'-'+todayDay);
+		fromDate = $('#fromDate').val().split('-');
+	}
+	
+	var addDate = $(takeElement).data('add-date').split('-');
+	var year = parseInt(fromDate[0]) + parseInt(addDate[0]);
+	var month = parseInt(fromDate[1]) + parseInt(addDate[1]) - 1;
+	var day = parseInt(fromDate[2]) + parseInt(addDate[2]);
+	var toDate = new Date(year, month, day, 0, 0, 0, 0);
+	year = toDate.getFullYear();
+	month = toDate.getMonth() + 1;
+	month = (month < 10)? '0' + month : month;
+	day = toDate.getDate();
+	day = (day < 10)? '0' + day : day;
+	debug(year+'-'+month+'-'+day);
+	$('#toDate').val(year+'-'+month+'-'+day);
+}
+
+function initDate() {
+	$('#toDate').val('');
+	$('#fromDate').val('');
+}
+
+function setDueDiligenceForm() {
+	$('input[name=planId]').val($(headElement).data('planId'))
+	$('input[name=fromDate]').val($(headElement).data('fromDate'));
+	$('input[name=toDate]').val($(headElement).data('toDate'));
+	$('input[name=misc]').val($(headElement).data('misc'));
+}
+
+/* ------------------------- 비동기 통신 ------------------------- */
+/* ajax 공통 */
+var loading = {
+	on: $('<div />', {class: 'loading'}),
+}
+
+/* head_detail에서 head 일련번호 세팅하기 */
+var headSeq = null;
+var selectedHeadSeq = null;
+var headElement = null;
+
+function setHeadSeqRequest(takeElement) {
+	headElement = takeElement;
+	var callbackfunction = $(takeElement).data("fn-name"); //data-fn-name=?
+	if (callbackfunction.substr(callbackfunction.length - 1) != ')') {
+		callbackfunction += "(headSeq)";
+	}
+	headSeq = $(takeElement).data("key"); // data-key=?
+	debug(headSeq);
+	$(takeElement).parents("table")
+		.children()
+		.children(".table-success")
+		.removeClass("table-success");
+	$(takeElement).addClass("table-success");
+	debug(callbackfunction);
+	eval(callbackfunction);
+}
+
+/* head_detail에서 head 일련번호 가져오기 */
+function getHeadSeqRequest() {
+	return headSeq;
+}
+
+/* 렌탈요청헤드 조회 
+ * success - 헤드부분 테이블 생성
+ * error - 에러 메시지 알림창
+ */
+function getRentalRequest(takeElement){
+	var requestURL = "getrentalrequest.do";
+	var keyword = $("#keyword").val();
+	if (keyword == null || keyword == "") {
+		keyword = "2017";
+	}
+	var sData = JSON.stringify({
+		keyword:keyword
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			//테이블데이터 생성부분
+			for (var i = 0; i < rData.length; i++) {
+				ihtml += "<tr data-fn-name='getassetlist' data-key='"+rData[i].reqId+"' onclick='setHeadSeqRequest(this)'>";
+				ihtml += "<td>"+rData[i].reqId+"</td><td>"+rData[i].reqTransDate+"</td>";
+				ihtml += "</tr>";
+			}
+			debug(ihtml);
+			$("#rentalRequestResult tbody").html(ihtml);
+			$('.loading').remove();
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			setTimeout(3000);
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 품목조회(콜백함수)
+ * success - 품목별 테이블 생성
+ * error - 에러 알림창
+ */
+function getassetlist(productId) {
+	if (productId == selectedHeadSeq) {
+		debug("already chosen")
+		return;
+	}
+	selectedHeadSeq = productId;
+	var requestURL = "getassetlist.do";
+	var sData = JSON.stringify({
+		productId:productId
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			//테이블데이터 생성부분
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				ihtml += "<tr data-item-id='"+ row.id
+					+"' data-item-name='"+ row.name
+					+"' data-item-entrydate='"+ row.entrydate
+					+"' data-item-recentdate='"+ row.recentdate
+					+"' data-item-unstorecount='"+ row.unstorecount
+					+"' data-item-price='"+ row.price+"'>";
+				ihtml += "<td>"+row.id+
+					"</td><td>"+row.name+
+					"</td><td>"+row.entrydate+
+					"</td><td>"+row.recentdate+
+					"</td><td>"+row.unstorecount+
+					"</td><td>"+row.price+
+					"</td><td><button class='btn btn-primary btn-sm' onclick='setUnstoreRequest(this)'>출고요청</button></td></tr>";
+			}
+			debug(ihtml);
+			$("#productList").html(ihtml);
+			if ($(".table-success").data("flag") == "true") {
+				$("table button").attr("disabled", true);
+			}
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 자산관리자 출고처리
+ * success - 해당자산 영업 출고
+ * error - 에러 메시지 알림창
+ */
+function setUnstoreRequest(takeElement) {
+	var requestURL = "rentalassetconfirm.do";
+	var sData = JSON.stringify({
+		id:$(takeElement).parents("tr").data("item-id"),
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			switch (rData.result) {
+			case "success":
+				msgBox = new MsgWindow('plain');
+				msgBox.setMessage('출고성공!','['+rData.id+']가 정상적으로 렌트출고요청 되었습니다.');
+				msgBox.setButton('확인','MsgWindow.hide(this)');
+				msgBox.show();
+				$("table button").attr("disabled", true);
+				$(".table-success").data("flag", "true");
+				$(".table-success").addClass("table-danger");
+				break;
+			case "invalid":
+				var msg = new MsgWindow('invalid');
+				msg.setMessage('자산상태오류',rData.id+' 가 존재하지 않거나, 변경할 수 없는 상태입니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "violated":
+				var msg = new MsgWindow('violated');
+				msg.setMessage('정책위반','정책위반이 발생하였습니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "network":
+				var msg = new MsgWindow('error');
+				msg.setMessage('네트워크 오류','네트워크에 문제가 있습니다. 관리자에게 문의하십시오.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			}
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 요청별 자산조회
+ * success - 요청내용별 자산리스트 생성
+ * error - 에러 메시지 알림창
+ */
+function getRequestAssetList(takeData) {
+	if (takeData == selectedHeadSeq) {
+		debug("already chosen")
+		return;
+	}
+	selectedHeadSeq = takeData;
+	var requestURL = "getrequestassetlist.do";
+	var sData = JSON.stringify({
+		assetState:takeData
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			//테이블데이터 생성부분
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				ihtml += "<tr data-item-id='"+ row.id
+					+"' data-item-name='"+ row.name
+					+"' data-item-entrydate='"+ row.entrydate
+					+"' data-item-recentdate='"+ row.recentdate
+					+"' data-item-unstorecount='"+ row.unstorecount
+					+"' data-item-price='"+ row.price+"'>";
+				ihtml += "<td>"+row.id+
+					"</td><td>"+row.name+
+					"</td><td>"+row.entrydate+
+					"</td><td>"+row.recentdate+
+					"</td><td>"+row.unstorecount+
+					"</td><td>"+row.price+
+					"</td><td><button class='btn btn-primary btn-sm' onclick='setUnstore(this)'>출고</button></td></tr>"
+			}
+			debug(ihtml);
+			$("#productList").html(ihtml);
+			if ($(".table-success").data("flag") == "true") {
+				$("table button").attr("disabled", true);
+			}
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 요청별 검색 자산조회
+ * success - 요청내용별 자산리스트 생성
+ * error - 에러 메시지 알림창
+ */
+function getrequestsearchassetlist() {
+	var requestURL = "getrequestsearchassetlist.do";
+	var sData = JSON.stringify({
+		assetState:headSeq,
+		keyword:$("#keyword").val()
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			//테이블데이터 생성부분
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				ihtml += "<tr data-item-id='"+ row.id
+					+"' data-item-name='"+ row.name
+					+"' data-item-entrydate='"+ row.entrydate
+					+"' data-item-recentdate='"+ row.recentdate
+					+"' data-item-unstorecount='"+ row.unstorecount
+					+"' data-item-price='"+ row.price+"'>";
+				ihtml += "<td>"+row.id+
+					"</td><td>"+row.name+
+					"</td><td>"+row.entrydate+
+					"</td><td>"+row.recentdate+
+					"</td><td>"+row.unstorecount+
+					"</td><td>"+row.price+
+					"</td><td><button class='btn btn-primary btn-sm' onclick='setUnstore(this)'>출고</button></td></tr>"
+			}
+			debug(ihtml);
+			$("#productList").html(ihtml);
+			if ($(".table-success").data("flag") == "true") {
+				$("table button").attr("disabled", true);
+			}
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 출고관리자 출고처리
+ * success - 해당자산 출고처리
+ * error - 에러 메시지 알림창
+ */
+function setUnstore(takeElement) {
+	var requestURL = "setunstore.do";
+	var sData = JSON.stringify({
+		id:$(takeElement).parents("tr").data("item-id"),
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			switch (rData.result) {
+			case "success":
+				var msg = new MsgWindow('plain');
+				msg.setMessage('출고성공',rData.id+' 가 정상적으로 출고 되었습니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				$(takeElement).attr("disabled", true);
+				$(".table-success").data("flag", "true");
+				break;
+			case "invalid":
+				var msg = new MsgWindow('invalid');
+				msg.setMessage('자산상태오류',rData.id+' 가 존재하지 않거나, 변경할 수 없는 상태입니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "violated":
+				var msg = new MsgWindow('violated');
+				msg.setMessage('정책위반','정책위반이 발생하였습니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "network":
+				var msg = new MsgWindow('error');
+				msg.setMessage('네트워크 오류','네트워크에 문제가 있습니다. 관리자에게 문의하십시오.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			}
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 실사계획 불러오기
+ * success - 요청 리스트 조회
+ * error - 에러 메시지
+ */
+function getDueDiligencePlanList() {
+	var requestURL = "getduediligenceplanlist.do";
+	var keyword = $("#keyword").val();
+	if (keyword == null || keyword == "") {
+		var msg = new MsgWindow('violated');
+		msg.setMessage('검색어 정책위반','검색어를 입력하지 않아 조회할 수 없습니다. 확인 후 다시 시도해주십시요.');
+		msg.setButton('확인','MsgWindow.hide(this)');
+		msg.show();
+		return;
+	}
+	$('#dueDiligenceplanListResult tbody tr').remove();
+	var sData = JSON.stringify({
+		keyword:keyword
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			for (var index = 0; index < rData.length; index++) {
+				var tr = $('<tr />', {onclick: 'setHeadSeqRequest(this)'});
+				$(tr).data('key', rData[index].planId);
+				$(tr).data('plan-id', rData[index].planId);
+				$(tr).data('from-date', rData[index].fromDate);
+				$(tr).data('to-date', rData[index].toDate);
+				$(tr).data('misc', rData[index].misc);
+				$(tr).data('fn-name', 'setDueDiligenceForm()');
+				$(tr).append($('<td />', {text: rData[index].planId}));
+				$(tr).append($('<td />', {text: rData[index].fromDate}));
+				$('#dueDiligenceplanListResult tbody').append(tr);
+			}
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 실사계획 등록하기
+ * success - 실사계획 등록 후 결과 메시지
+ * error - 에러메시지
+ */
+function newDueDiligencePlan(takeElement) {
+	var requestURL = "newduediligenceplan.do";
+	var sData = "{";
+	$($('form[name=due_diligence]').serializeArray()).each(function(i){
+		sData += (i != 0)? ',' : '';
+		sData += '"'+this.name+'":"'+this.value+'"';
+	})
+	sData += "}";
+	var errorField = "";
+	var jsonObj = JSON.parse(sData);
+	
+	if (jsonObj.planId == '') {
+		errorField = "실사아이디";
+	} else if (jsonObj.fromDate == '') {
+		errorField = "시작날짜";
+	} else if (jsonObj.toDate == '') {
+		errorField = "종료날짜";
+	} else if (jsonObj.fromDate > jsonObj.toDate) {
+		errorField = "올바른 날짜정보"
+	}
+	
+	if (errorField != '') {
+		var msg = new MsgWindow('invalid');
+		msg.setMessage('데이터 오류',errorField+'가 입력되지 않았습니다. 확인해주세요.');
+		msg.setButton('확인','MsgWindow.hide(this)');
+		msg.show();
+		return;
+	}
+	
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			switch (rData.result) {
+			case "success":
+				var msg = new MsgWindow('plain');
+				msg.setMessage('실사계획 저장완료','실사계획이 저장 되었습니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				$('form[name=due_diligence]').each(function(){
+					this.reset();
+				})
+				break;
+			case "invalid":
+				var msg = new MsgWindow('invalid');
+				msg.setMessage('실사계획 상태오류','실사계획이 존재하지 않거나, 변경할 수 없는 상태입니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "violated":
+				var msg = new MsgWindow('violated');
+				msg.setMessage('정책위반','정책위반이 발생하였습니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "network":
+				var msg = new MsgWindow('error');
+				msg.setMessage('네트워크 오류','네트워크에 문제가 있습니다. 관리자에게 문의하십시오.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			}
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 실사계획 변경하기
+ * success - 실사계획 변경 후 결과 메시지
+ * error - 에러메시지
+ */
+function setDueDiligencePlan(takeElement) {
+	var requestURL = "setduediligenceplan.do";
+	var sData = "{";
+	$($('form[name=due_diligence]').serializeArray()).each(function(i){
+		sData += (i != 0)? ',' : '';
+		sData += '"'+this.name+'":"'+this.value+'"';
+	})
+	sData += "}";
+	var errorField = "";
+	var jsonObj = JSON.parse(sData);
+	
+	if (jsonObj.planId == '') {
+		errorField = "실사아이디";
+		$('input[name=planId]').focus();
+	} else if (jsonObj.fromDate == '') {
+		errorField = "시작날짜";
+		$('input[name=fromDate]').focus();
+	} else if (jsonObj.toDate == '') {
+		errorField = "종료날짜";
+		$('input[name=toDate]').focus();
+	} else if (jsonObj.fromDate > jsonObj.toDate) {
+		errorField = "올바른 날짜정보"
+		$('input[name=toDate]').focus();
+	}
+	
+	if (errorField != '') {
+		var msg = new MsgWindow('invalid');
+		msg.setMessage('데이터 오류',errorField+'가 입력되지 않았습니다. 확인해주세요.');
+		msg.setButton('확인','MsgWindow.hide(this)');
+		msg.show();
+		return;
+	}
+	
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			switch (rData.result) {
+			case "success":
+				var msg = new MsgWindow('plain');
+				msg.setMessage('실사계획 저장완료','실사계획이 저장 되었습니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				$(takeElement).attr('disabled', true);
+				$('form[name=due_diligence] input').attr('disabled', true);
+				break;
+			case "invalid":
+				var msg = new MsgWindow('invalid');
+				msg.setMessage('실사계획 상태오류','실사계획이 존재하지 않거나, 변경할 수 없는 상태입니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "violated":
+				var msg = new MsgWindow('violated');
+				msg.setMessage('정책위반','정책위반이 발생하였습니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "network":
+				var msg = new MsgWindow('error');
+				msg.setMessage('네트워크 오류','네트워크에 문제가 있습니다. 관리자에게 문의하십시오.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			}
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			debug('comlete');
+			$(".loading").remove();
+		}
+	});
+}
+
+/* ======================================== by 이동훈 ================================================= */
+
+function setOutsideHeadSeqRequest(takeElement) {
+	var callbackfunction = $(takeElement).data("fn-name");
+	headSeq = $(takeElement).data("key");//data-key=?
+	var headSeq2 = $(takeElement).data("key2");//data-key=?
+	debug(headSeq);
+	debug(headSeq2);
+	$(takeElement).parents("table")
+		.children()
+		.children(".table-success")
+		.removeClass("table-success");
+	$(takeElement).addClass("table-success");
+	debug(callbackfunction+"(headSeq, headSeq2)");
+	eval(callbackfunction+"(headSeq, headSeq2)");
+	$("#di_request").attr("class", "tab-pane fade active in active show")
+    $("#firstTab").attr("class", "nav-link active")
+    $("#di_asSubmit").attr("class", "tab-pane fade")
+    $("#secondTab").attr("class", "nav-link")
+}
+
+/* as, 회수 리스트 조회 */
+function getVisitRequest(takeElement){
+   var requestURL = "getVisitRequest.do";
+   var key = $("#keyword").val();
+   var sData = JSON.stringify({
+	  select:$("#sel_visit").val(),
+      keyword:$("#keyword").val(),
+      pagetype:$("#pagetype").val()
+   });
+   debug(sData);
+   debug(requestURL);
+   $.ajax({
+      type : "POST",
+      url : requestURL,
+      data : sData,
+      dataType : "JSON",
+      async: true,
+      contentType:'application/json;charset=UTF-8',
+      beforeSend: function() {
+         $("#content").append(loading.on);
+      },
+      success : function(rData) {
+         var ihtml = "";
+         debug("rData.length : " + rData.length);
+         debug(rData);
+         //테이블데이터 생성부분
+         for (var i = 0; i < rData.length; i++) {
+            ihtml += "<tr data-fn-name='getVisitList' data-key='"+rData[i].buyId+"' data-key2='"+rData[i].viId+"' onclick='setOutsideHeadSeqRequest(this)'>";
+            ihtml += "<td>"+rData[i].cuId+"</td><td>"+rData[i].itName+"</td><td>"+rData[i].viDay+"</td><td>"+rData[i].viComplete+"" +
+            		"<input type='hidden' id='hi_state' name='hi_state' value='As'><input type='hidden' id='hi_key'' name='hi_key' value="+key+"></td>";
+            ihtml += "</tr>";
+         }
+         debug(ihtml);
+         $("#visitRequestResult tbody").html(ihtml);
+         $('.loading').remove();
+      },
+      error : function() {
+      },
+      complete : function() {
+         $(".loading").remove();
+      }
+   });
+}
+
+/* as품목조회 */
+function getVisitList(productId, visitId) {
+	if (productId == selectedHeadSeq) {
+		debug("already chosen")
+		return;
+	}
+	selectedHeadSeq = productId;
+	var requestURL = "getVisitList.do";
+	var sData = JSON.stringify({
+		productId:""+productId,
+		visitId:""+visitId
+	});
+	debug("품목 sData : " + sData);
+	debug("품목 URL : " +requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = rData.prId;
+			debug("success rData길이 : " + rData.length);
+			debug("success rData : " + rData);
+			// DetailFront 뿌려주기
+			$("#la_prId").html(rData.prId);
+	        $("#la_itCode").html(rData.itCode);
+	        $("#la_itName").html(rData.itName);
+	        $("#la_prManufacturer").html(rData.prManufacturer);
+	        $("#la_viName").html(rData.viName);
+	        $("#la_viMobile").html(rData.viMobile);
+	        $("#la_viPost").html(rData.viPost);
+	        $("#la_viAddr").html(rData.viAddr);
+	        $("#la_viAddD").html(rData.viAddD);
+	        $("#la_buyStart").html(rData.buyStart);
+	        $("#la_buyEnd").html(rData.buyEnd);
+	        $("#la_viDay").html(rData.viDay);
+	         
+	        $("#hi_prId").val(rData.prId);
+	        $("#hi_itName").val(rData.itName);
+	        $("#hi_viId").val(rData.viId);
+	        $("#hi_viName").val(rData.viName);
+	        if(typeof(rData.outDay) != 'undefined'){
+	            var datee = rData.outDay;
+	            var chDate = datee.substring(0,10)+"T"+datee.substring(11);
+	            $("#hi_outDay").val(chDate);
+	         }
+	        $("#hi_cuId").val(rData.cuId);
+	        $("#hi_buyId").val(productId);
+	        $("#hi_outId").val(rData.outId);
+	        $("#hi_outSort").val(rData.outSort);
+	        $("#hi_outContent").val(rData.outContent);
+	        $("#hi_outState").val(rData.outState);
+	        $("#hi_viCode").val($("#hi_state").val());
+	        $("#hi_keyValue").val($("#hi_key").val());
+		},
+		error : function() {
+			alert("검색실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* as저장 */
+function setFixInfo(targetEelement) {
+	var requestURL = "setFixInfo.do";
+	var sData = formChange($(targetEelement).parents("form"))
+	var key = $("#hi_keyValue").val();
+	debug("key : " + key);
+	debug("as저장 sData : " + sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "json",	// json하면 오류
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug("rData : " + rData);
+			alert("등록완료!!");
+			getVisitRequest(key);
+		},
+		error : function(request,status,error) {
+			alert("code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 자산관리자 리스트 가져오기 */
+function getProductRequest(takeElement){
+	var requestURL = "getProductRequest.do";
+	var keyValue = $("#keyword").val();
+	debug("keyValue" + keyValue);
+	if(keyValue == ""){
+		keyValue = " ";
+	}
+	var sData = JSON.stringify({
+		keyword:keyValue
+	});
+	debug("sData : " + sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			var qhtml = "";
+			debug(rData.length);
+			debug(rData);
+			//테이블데이터 생성부분
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				ihtml += "<tr data-item-prid='"+ row.prId
+					+"' data-item-buyid='"+ row.buyId
+					+"' data-item-itid='"+ row.itId
+					+"' data-item-itname='"+ row.itName
+					+"' data-item-prfirstday='"+ row.prFirstDay
+					+"' data-item-prinday='"+ row.prInDay
+					+"' data-item-proutday='"+ row.prOutDay
+					+"' data-item-prouttarget='"+ row.prOutTarget
+					+"' data-item-prlocation='"+ row.prLocation
+					+"' data-item-prstate='"+ row.prState
+					+"' data-item-prcount='"+ row.prCount
+					+"' data-item-prneeds='"+ row.prNeeds
+					+"' data-item-prqr='"+ row.prQr
+					+"' data-item-keyvalue='"+ keyValue+"'>";
+				ihtml += "<td>"+row.prId+
+					"</td><td>"+row.buyId+
+					"</td><td>"+row.itId+
+					"</td><td>"+row.itName+
+					"</td><td>"+row.prFirstDay+
+					"</td><td>"+row.prInDay+
+					"</td><td>"+row.prOutDay+
+					"</td><td>"+row.prOutTarget+
+					"</td><td>"+row.prLocation+
+					"</td><td>"+row.prState+
+					"</td><td>"+row.prCount+
+					"</td><td>"+row.prNeeds+
+					"</td><td>"+row.prQr+
+					"</td><td><div style='display: none; ' id='donghun'>"+row.prQr+
+					"</div><button class='btn btn-primary btn-sm' onclick='doQrPrint(this)'>QR인쇄</button>"+
+					"</td><td><button class='btn btn-primary btn-sm' onclick='doProductUpdate(this)''>수정</button></td></tr>"
+			}
+			debug(ihtml);
+			$("#productRequestResult tbody").html(ihtml);
+			$("#printQR").html(qhtml);
+			$('.loading').remove();
+		},
+		error : function() {
+			var eMsg = new MsgWindow();
+			eMsg.setWindowType("error");
+			eMsg.setMessage('검색결과없음', keyValue + "에 대한 검색결과가 없습니다.");
+			eMsg.setButton('확인','debug(this.value)');
+			eMsg.show(); 
+			//alert(keyValue + "에 대한 검색결과가 없습니다.");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/*  자산관리 QR코드 인쇄하기  */
+function doQrPrint(takeElement){
+//	document.body.innerHTML = $(takeElement).parents("tr").find("div").html();
+	var QR = $(takeElement).parents("tr").find("div").html();
+	var objWin = window.open('', 'print', 'height=600,width=800');
+	objWin.document.write("<div>");
+	objWin.document.write(QR);
+	objWin.document.write("</div>");
+	objWin.print();
+	objWin.close();
+}
+
+/*  자산관리자 변경폼 가져오기  */
+function doProductUpdate(takeElement) {
+	debug("hi_itImage : " + $("#hi_itImage").val())
+	var requestURL = "getProductUpdate.do";
+	var sData = JSON.stringify({
+		prId:$(takeElement).parents("tr").data("item-prid"),
+		itId:""+$(takeElement).parents("tr").data("item-itid"),
+		keyvalue:$(takeElement).parents("tr").data("item-keyvalue")
+	});
+	debug("자산변경 keyvalue : " + $(takeElement).parents("tr").data("item-keyvalue"));
+	debug("자산변경 takeElement : " + takeElement);
+	debug("자산변경 sData : " + sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			$("#productCare").hide();
+			$("#productUpdate").fadeIn(100);
+			if(typeof(rData.prOutDay) != 'undefined'){
+				$("#img_itImage").attr("src", rData.itImage)
+				$("#fi_prId").val(rData.prId);
+				$("#hi_itImage").val(rData.itImage)
+				$("#tb_prId").val(rData.prId)
+				$("#tb_itName").val(rData.itName)
+				$("#tb_itCode").val(rData.itCode)
+				$("#tb_itManufacturer").val(rData.itManufacturer)
+				//(
+				if((typeof(rData.prInDay) != 'undefined') && (rData.prInDay != null)) {
+					if((rData.prInDay.length > 0)){
+						var datee = rData.prInDay;
+						var chDate = datee.substring(0,10)+"T"+datee.substring(11);
+						$("#tb_prInDay").val(chDate);
+					}
+				} else {
+					$("#tb_prInDay").val("");
+				}
+				//$("#tb_prInDay").val(rData.prInDay)
+				$("#tb_itAcquisition").val(rData.itAcquisition)
+				$("#tb_itPrice").val(rData.itPrice)
+				$("#sb_prState").val(rData.prState)
+				debug("rData.prState : " + rData.prState)
+				$("#tb_prCount").val(rData.prCount)
+				
+				if((typeof(rData.prOutDay) != 'undefined') && (rData.prInDay != null)) {
+					if((rData.prOutDay.length > 0)){
+						var datee = rData.prOutDay;
+				        var chDate = datee.substring(0,10)+"T"+datee.substring(11);
+				        $("#tb_prOutDay").val(chDate);
+					}
+				} else {
+					$("#tb_prOutDay").val("");
+				}
+				$("#tb_prOutTarget").val(rData.prOutTarget)
+				$("#tb_itPeriod").val(rData.itPeriod)
+				$("#tb_prLocation").val(rData.prLocation)
+				$("#ta_itContent").val(rData.itContent)
+				$("#ta_prNeeds").val(rData.prNeeds)
+				$("#hi_keyword").val($(takeElement).parents("tr").data("item-keyvalue"))
+				$("#hi_itId").val($(takeElement).parents("tr").data("item-itid"))
+		        $("#img_itImage").attr("src", rData.itImage);
+		        debug("img_itImage : " + rData.itImage)
+		        debug("fi_itImage : " + $("#fi_itImage").val())
+			} else{
+				alert("값이엄성 ㅜ")
+			}
+			debug("rData.itImage = " + rData.itImage)
+		},
+		error : function(rData) {
+			alert("가져오기실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/*  자산관리자 변경처리(개별)  */
+function setProductUpdate(targetEelement) {
+	var requestURL = "setProductUpdate.do";
+	var sData = formChange($(targetEelement).parents("form"))
+	debug("자산변경 sData : " + sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug("rData : " + rData);
+			var key = $("#hi_keyword").val();
+			$("#productCare").fadeIn(100);
+			$("#productUpdate").hide();
+			getProductRequest(key)
+		},
+		error : function() {
+			alert("자산변경실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/*  자산관리자 변경처리(전체)  */
+function setProductUpdateAll(targetEelement) {
+	var tmpImage = $("#tb_file").val()
+	var image = tmpImage.substring(12)
+	var tmpPrId = $("#tb_prId").val();
+	var prId = tmpPrId + "_" + image;
+	$("#tb_itImage").val(prId)
+	$("#hi_itImage").val(tmpImage)
+	var requestURL = "setProductUpdateAll.do";
+	var sData =  formChange($(targetEelement).parents("form"));
+	debug("자산변경 sData ALL: " + sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug("rData : " + rData);
+			var key = $("#hi_keyword").val();
+			$("#productCare").fadeIn(100);
+			$("#productUpdate").hide();
+			$("#ta_itContent").attr("readonly", true);
+			$("#tb_itPeriod").attr("readonly", true);
+			$("#tb_itPrice").attr("readonly", true);
+			$("#tb_itAcquisition").attr("readonly", true);
+			$("#fi_itImage").attr("disabled", true);
+			$("#bt_doAllEdit").show();
+			$("#bt_edit").show();
+			$("#bt_allEdit").hide();
+			fileUpload();
+			getProductRequest(key)
+			debug("자산변경 ALL 끝")
+		},
+		error : function() {
+			alert("자산변경실패(ALL)!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 자산등록요청 리스트 조회 */
+function getProductInsertRequest(){
+   var requestURL = "getProductInsertRequest.do";
+   debug(requestURL);
+   $.ajax({
+      type : "POST",
+      url : requestURL,
+      dataType : "JSON",
+      async: true,
+      contentType:'application/json;charset=UTF-8',
+      beforeSend: function() {
+         $("#content").append(loading.on);
+      },
+      success : function(rData) {
+         var ihtml = "";
+         debug("rData.length : " + rData.length);
+         debug(rData);
+         //테이블데이터 생성부분
+         for (var i = 0; i < rData.length; i++) {
+            ihtml += "<tr data-fn-name='getProductInsertList' data-key='"+rData[i].prId+"' onclick='setHeadSeqRequest(this)'>";
+            ihtml += "<td>"+rData[i].inName+"</td><td>"+rData[i].inState+"</td><td>"+rData[i].inFDay+"</td><td>"+rData[i].inComplete+"</td>";
+            ihtml += "</tr>";
+         }
+         debug(ihtml);
+         $("#procutRequestList tbody").html(ihtml);
+         $('.loading').remove();
+      },
+      error : function() {
+    	  alert("등록요청조회실패")
+      },
+      complete : function() {
+         $(".loading").remove();
+      }
+   });
+}
+
+/* 자산등록 등록폼 가져오기 */
+function getProductInsertList(productId) {
+	if (productId == selectedHeadSeq) {
+		debug("already chosen")
+		return;
+	}
+	selectedHeadSeq = productId;
+	var requestURL = "getProductInsert.do";
+	var sData = JSON.stringify({
+		productId:productId,
+	});
+	debug("등록 sData : " + sData);
+	debug("등록 URL : " +requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = rData.prId;
+			debug("success rData길이 : " + rData.length);
+			debug("success rData : " + rData);
+			// DetailFront 뿌려주기
+	        $("#tb_prId").val(rData.prId);
+	        $("#fi_prId").val(rData.prId);
+	        $("#tb_itId").val(rData.itId);
+	        $("#tb_itManufacturer").val(rData.itManufacturer);
+	        $("#tb_itName").val(rData.itName);
+	        $("#tb_itCode").val(rData.itCode);
+	        if((typeof(rData.prFirstDay) != 'undefined') && (rData.prInDay != null)) {
+	        	if((rData.prFirstDay.length > 0)){
+	        		var datee = rData.prFirstDay;
+	        		var chDate = datee.substring(0,10)+"T"+datee.substring(11);
+	        		$("#tb_prFirstDay").val(chDate);
+	        	}
+			} else {
+				$("#tb_prFirstDay").val("");
+			}
+	        //(
+	        //$("#tb_prFirstDay").val(rData.prFirstDay);
+			if((typeof(rData.prInDay) != 'undefined') && (rData.prInDay != null)) {
+				if((rData.prInDay.length > 0)){
+					var datee = rData.prInDay;
+					var chDate = datee.substring(0,10)+"T"+datee.substring(11);
+					$("#tb_prInDay").val(chDate);
+				}
+			} else {
+				$("#tb_prInDay").val("");
+			}
+			//$("#tb_prInDay").val(rData.prInDay)
+			$("#tb_itAcquisition").val(rData.itAcquisition)
+			$("#tb_itPrice").val(rData.itPrice)
+			$("#sb_prState").val(rData.prState)
+			$("#tb_prCount").val(rData.prCount)
+			
+			if((typeof(rData.prOutDay) != 'undefined') && (rData.prInDay != null)) {
+				if((rData.prOutDay.length > 0)){
+					var datee = rData.prOutDay;
+			        var chDate = datee.substring(0,10)+"T"+datee.substring(11);
+			        $("#tb_prOutDay").val(chDate);
+				}
+			} else {
+				$("#tb_prOutDay").val("");
+			}
+	        //$("#tb_prOutDay").val(rData.prOutDay);
+	        $("#tb_prOutTarget").val(rData.prOutTarget);
+	        $("#tb_prLocation").val(rData.prLocation);
+	        $("#tb_itPeriod").val(rData.itPeriod);
+	        $("#tb_itContent").val(rData.itContent);
+	        $("#tb_prQr").val(rData.prQr);
+	        $("#img_itImage").attr("src", rData.itImage);
+	        debug("img_itImage : " + rData.itImage)
+	        debug("fi_itImage : " + $("#fi_itImage").val())
+		},
+		error : function() {
+			alert("검색실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/*  자산등록하기  */
+function setProductInsert(targetEelement) {
+	var requestURL = "setProductInsert.do";
+	var tmpImage = $("#tb_file").val()
+	debug("tmpImage : " + $("#tb_file").val())
+	var image = tmpImage.substring(12)
+	debug("image : " + image)
+	var tmpPrId = $("#tb_prId").val();
+	debug("tmpPrId : " + tmpPrId)
+	var prId = tmpPrId + "_" + image;
+	debug("prId : " + prId)
+	$("#tb_itImage").val(prId)
+	debug("$(#tb_itImage).val(prId) : " + $("#tb_itImage").val(prId))
+	var sData = formChange($(targetEelement).parents("form")); + JSON.stringify({
+		tb_itImage:$("#tb_itImage").val(prId),
+	});
+	 debug("자산등록 sData : " + sData);
+	 debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug("rData : " + rData);
+			alert("등록완료!!");
+			fileUpload();
+			getProductInsertRequest();
+		},
+		error : function() {
+			alert("자산등록실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/*  이미지 업로드하기  */
+function fileUpload() {
+	var requestURL = "fileUpload.do";
+	debug(requestURL);
+	$('#uploadImageForm').ajaxForm({
+		type : "POST",
+		url : requestURL,
+		dataType : "text",
+		async: false,
+		method: "post",
+		enctype: "multipart/form-data",
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug("rData : " + rData);
+			alert("이미지 등록완료!!");
+		},
+		error:function(){
+			alert("이미지 등록실패!!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+	$("#uploadImageForm").submit();
+}
+
+/*  자산관리 검색유지 뒤로가기  */
+function doKeywordBack(takeElement){
+	$("#productCare").fadeIn(100);
+	$("#productUpdate").hide();
+	getProductRequest(takeElement)
+}
+
+/*  전체변경 disabled 및 readonly 풀어주기  */
+function doAllEdit(){
+	$("#bt_doAllEdit").hide();
+	$("#bt_edit").hide();
+	$("#bt_allEdit").show();
+	alert("이제 품목항목도 변경이 가능합니다.")
+	$("#ta_itContent").attr("readonly", false);
+	$("#tb_itPeriod").attr("readonly", false);
+	$("#tb_itPrice").attr("readonly", false);
+	$("#tb_itAcquisition").attr("readonly", false);
+	$("#tb_itManufacturer").attr("readonly", false);
+	$("#tb_itCode").attr("readonly", false);
+	$("#tb_itName").attr("readonly", false);
+	$("#tb_file").attr("disabled", false);
+}
+
+/* 상담 고객 정보 조회 */
+function getVisitCustomer(takeElement) {
+	   var sData = JSON.stringify({
+	      memberId:$(takeElement).val()
+	   });
+	   debug("상담sData : " + sData)
+	   $.ajax({
+	      type : "POST",
+	      url : "getCustomerInfo.do",
+	      data : sData,
+	      dataType : "JSON",
+	      async: true,
+	      contentType:'application/json;charset=UTF-8',
+	      beforeSend: function() {
+	         $("#content").append(loading.on);
+	      },
+	      success : function(rData) {
+	    	  debug("상담rData : " + rData)
+	         if(typeof(rData.memName) != 'undefined'){
+	        	 $(takeElement).parents("form").children().find("#tb_cuName").val(rData.memName);
+	        	 $(takeElement).parents("form").children().find("#tb_cuBirth").val(rData.memBirth);
+	        	 $(takeElement).parents("form").children().find("#tb_post").val(rData.memPost);
+	        	 $(takeElement).parents("form").children().find("#tb_addr").val(rData.memAddr);
+	        	 $(takeElement).parents("form").children().find("#tb_addD").val(rData.memAddD);
+	        	 $(takeElement).parents("form").children().find("#tb_cuResult").val("회원입니다.");
+	        	 $(takeElement).parents("form").children().find("#tb_cuName").prop("readonly", true);
+	        	 $(takeElement).parents("form").children().find("#tb_cuBirth").prop("readonly", true);
+	        	 $(takeElement).parents("form").children().find("#bt_temporary").prop("disabled", true);
+	        	 if($(takeElement).parents("form").attr("name") != "rentalAdviceForm"){
+	        		 getVisitItem(takeElement);
+	        	 }
+	         } else {
+	        	 $(takeElement).parents("form").children().find("#tb_cuName").val("");
+	        	 $(takeElement).parents("form").children().find("#tb_cuBirth").val("");
+	        	 $(takeElement).parents("form").children().find("#tb_post").val("");
+	        	 $(takeElement).parents("form").children().find("#tb_addr").val("");
+	        	 $(takeElement).parents("form").children().find("#tb_addD").val("");
+	        	 $(takeElement).parents("form").children().find("#tb_cuResult").val("비회원입니다.");
+	        	 if($(takeElement).parents("form").attr("name") == "rentalAdviceForm"){
+	        		 $(takeElement).parents("form").children().find("#tb_cuName").prop("readonly", false);
+	        		 $(takeElement).parents("form").children().find("#tb_cuBirth").prop("readonly", false);
+	        		 $(takeElement).parents("form").children().find("#bt_temporary").prop("disabled", false);
+	        	 }
+	         }
+	      },
+	      error : function() {
+	         alert("검색결과 없습니다.");
+	      },
+	      complete : function() {
+	         $(".loading").remove();
+	    }
+   });
+}
+
+/*  상담 자산정보 가져오기  */
+function getVisitItem(takeElement) {
+	   var sData = JSON.stringify({
+	      memberId:$(takeElement).val()
+	   });
+	   var ihtml="";
+	   $.ajax({
+	      type : "POST",
+	      url : "getItemInfo.do",
+	      data : sData,
+	      dataType : "JSON",
+	      async: true,
+	      contentType:'application/json;charset=UTF-8',
+	      beforeSend: function() {
+	         $("#content").append(loading.on);
+	      },
+	      success : function(rData) {
+	    	  var memName = $(takeElement).parents("form").children().find("#tb_cuName").val();
+	    	  var select = $(takeElement).parents("form").children().find("#sb_item")
+	    	  debug("상담(자산)rData : " + rData);
+	    	  debug("memName : " + memName);
+	    	  debug("formName : " + $(takeElement).parents("form").attr("name"));
+	        
+	    	  if(typeof(memName) != 'undefined'){
+	        	 debug("select : " + select.val());
+	        	 debug("rData : " + rData.length);
+        		 select.find("option").each(function(){
+        			 $(this).remove();
+        		 })
+        		 select.prepend("<option value='list'>-- 자산목록 --</option>");
+		        	 if(rData.length>1){
+		        		 for(var i=0; i<rData.length; i++){
+		        			 debug(rData[i].buyId + " /// " + i);
+		        			 select.append("<option value='" + rData[i].buyId + "'>" + rData[i].buyId + "</option>");
+		        			 $(takeElement).parents("form").children().find("#hi_itId").val(rData[i].itId);
+		        		 }
+		        	 } else if(rData.length == 1){
+		        		 for(var i=0; i<rData.length; i++){
+		        			 select.append("<option value='" + rData[i].buyId + "'>" + rData[i].buyId + "</option>");
+		        			 $(takeElement).parents("form").children().find("#hi_itId").val(rData[i].itId);
+		        		 } 
+		        	 }
+	    	  } else {
+	        	 $(takeElement).parents("form").children().find("#sb_item").val("");
+	        	 $(takeElement).parents("form").children().find("#tb_buyStart").val("");
+	        	 $(takeElement).parents("form").children().find("#tb_buyEnd").val("");
+	        	 select.find("option").each(function(){
+	        		 $(this).remove();
+	        		 select.append("<option value=' '></option>");
+	        	 })
+	         }
+	      },
+	      error : function() {
+	         alert("검색결과 없습니다.");
+	      },
+	      complete : function() {
+	         $(".loading").remove();
+	    }
+   });
+}
+
+/*  상담 자산기간 가져오기  */
+function changeValue(takeElement) {
+	   var sData = JSON.stringify({
+	      optionValue:$(takeElement).val()
+	   });
+	   debug("takeElement : " + takeElement);
+	   var ihtml="";
+	   $.ajax({
+	      type : "POST",
+	      url : "getChangeInfo.do",
+	      data : sData,
+	      dataType : "json",
+	      async: true,
+	      contentType:'application/json;charset=UTF-8',
+	      beforeSend: function() {
+	         $("#content").append(loading.on);
+	      },
+	      success : function(rData) {
+	    	  var memName = $(takeElement).parents("form").children().find("#tb_cuName").val();
+	    	  debug("memName : " + memName);
+	    	  debug("rData.buyStart : " + rData.buyStart);
+	    	  debug("rData.buyEnd : " + rData.buyEnd);
+	    	  var endDay = new Date(rData.buyEnd);
+	    	  var startDay = new Date(rData.buyStart);
+	    	  var reuslt = new Date(endDay-startDay);
+	    	  debug("endDay.getDate() - startDay.getDate() : " + (endDay.Date - startDay.Date));
+	    	  debug("endDay - startDay : " + (endDay - startDay));
+	    	  debug("endDay.getTime() : " + endDay.getTime());
+	    	  debug("startDay.getTime() : " + startDay.getTime());
+	    	  debug("endDay : " + endDay);
+	    	  debug("startDay : " + startDay);
+	    	  debug("endDay.getMonth() : " + endDay.getMonth());
+	    	  debug("startDay.getMonth() : " + startDay.getMonth());
+	    	  debug("reuslt : " + reuslt);
+	    	  if(typeof(memName) != 'undefined'){
+		    	  $(takeElement).parents("form").children().find("#tb_buyStart").val(rData.buyStart);
+		    	  $(takeElement).parents("form").children().find("#tb_buyEnd").val(rData.buyEnd);
+//		    	  $(takeElement).parents("form").children().find("#tb_buyMonth").val();
+	    	  } else if(memName == null){
+	    		  $(takeElement).parents("form").children().find("#tb_buyStart").val(" ");
+		    	  $(takeElement).parents("form").children().find("#tb_buyEnd").val(" ");
+		    	  $(takeElement).parents("form").children().find("#tb_buyMonth").val(" ");
+	    	  }
+	      },
+	      error : function() {
+	         alert("검색결과 없습니다.");
+	      },
+	      complete : function() {
+	         $(".loading").remove();
+	    }
+   });
+}
+
+/*  as상담등록하기  */
+function setAsAdvice(adviceId) {
+	var sData = formChange($("#asAdviceForm")) + JSON.stringify({
+		adviceId:adviceId,
+		tb_mobile:$("#tb_mobile").val()
+	});
+	var result =" ";
+	var requestURL = "setAsAdvice.do";
+	debug("as상담등록 sData : " + sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: false,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug("rData : " + rData);
+			alert("등록완료!!");
+			result = rData;
+		},
+		error : function() {
+			alert("자산등록실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+	return result;
+}
+
+/* 회수상담등록하기 */
+function setRefundAdvice(adviceId) {
+	var sData = formChange($("#refundAdviceForm")) + JSON.stringify({
+		adviceId:adviceId,
+		tb_mobile:$("#tb_mobile").val(),
+		reason:$("input[type=radio][name=rb_expiration]:checked").val()
+
+	});
+	var result =" ";
+	var requestURL = "setRefundAdvice.do";
+	debug("회수상담등록 sData : " + sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: false,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug("rData : " + rData);
+			alert("등록완료!!");
+			result = rData;
+		},
+		error : function() {
+			alert("자산등록실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+	return result;
+}
+
+/* 우편번호 (상담에서 사용) */
+function getPost(takeElement) {
+	new daum.Postcode({
+        oncomplete: function(data) {
+            var fullAddr = '';
+            var extraAddr = '';
+
+            if (data.userSelectedType === 'R') {
+                fullAddr = data.roadAddress;
+            } else {
+                fullAddr = data.jibunAddress;
+            }
+
+            if(data.userSelectedType === 'R'){
+                if(data.bname !== '') {
+                    extraAddr += data.bname;
+                }
+                if(data.buildingName !== '') {
+                    extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                }
+                fullAddr += (extraAddr !== '' ? ' ('+ extraAddr +')' : '');
+            }
+            $(takeElement).parents("form").children().find("#tb_post").val(data.zonecode);
+            $(takeElement).parents("form").children().find("#tb_addr").val(fullAddr);
+            document.getElementById('tb_addD').focus();
+        }
+    }).open();
+}
+
+/* 내부사용자 비밀번호 수정을 위한 메소드 */
+function updatePw(){
+	$("#tb_pw").attr("readonly", false);
+	$("#tb_pw").css("background-color", "white")
+	$("#tr_pwCheck").toggle(300);
+}
+
+/* 내부사용자 전화번호 수정을 위한 메소드 */
+function updateMobile(){
+	$("#tb_mobile").attr("readonly", false);
+	$("#tb_mobile").css("background-color", "white")
+}
+
+/* 내부사용자 주소 수정을 위한 메소드 */
+function updateWork(){
+	$("#tb_work").attr("readonly", false);
+	$("#tb_work").css("background-color", "white")
+}
+
+/* 내부사용자 정보불러올 시 select box값 지정해주는 메소드 */
+function sbSelect(selectData){
+	switch(selectData){
+		case "u" :
+			$("#sb_state").val("u").attr("selected", "selected");
+			break;
+		case "o" :
+			$("#sb_state").val("o").attr("selected", "selected");
+			break;
+		case "i" :
+			$("#sb_state").val("i").attr("selected", "selected");
+			break;
+		default :
+			$("#sb_state").val("업무상태").attr("selected", "selected");
+			break;
+	}
+}
+
+/* 비밀번호 확인 시 span에 글자 뿌려주는 메소드 */
+function checkPwRe(pw1, pw2){
+    if(pw1 != pw2){
+    	$("#checkPw").html("<font size='3px' color='red'> 비밀번호가 일치하지 않습니다. </font>");
+    	$("#submitMemberInfo").attr("disabled", true);
+    }else{
+    	$("#checkPw").html( "<font size='3px' color='blue'> 비밀번호가 일치합니다. </font>");
+    	$("#submitMemberInfo").attr("disabled", false);
+    }
+ }
+
+/* 비밀번호 확인 후 다시 비밀번호 접근 시 저장버튼 막아주는 메소드 */
+function disButton(){
+	$("#checkPw").html("<font> </font>");
+	$("#submitMemberInfo").attr("disabled", true);
+}
+
+
+/* ======================================== by 이원호 ================================================= */
+
+/* 로그인의 찾기, 회원가입 숨기기 */
+function getLoginTab(user) {
+	if(user=="customer"){
+		$("#employee").show(0);
+	} else{
+		$("#employee").hide(0);
+	}
+}
+
+/* 로그인시 radio버튼 값에 따른 .do 이동 */
+function getLogin() {
+	var st = $(":input:radio[name=rb_user]:checked").val();
+	document.loginForm.action = st+"Login.do";
+	document.loginForm.submit();
+}
+
+/* 상세주소 입력 막기 */
+function getAddressCheck() {
+	var post = $("#tb_post").val();
+	debug(post)
+	debug(post.length)
+	if (post.length == 0){
+		alert("주소를 입력하세요.");
+		$("#tb_post").focus();
+	}
+}
+
+/* 아이디 중복 확인 */
+function setJoinId() {
+	var customerId = $("#tb_id").val();
+	if (customerId.trim().length > 0) {
+		var requestURL = "getIdCheck.do";
+		var sData = JSON.stringify({
+	      customerId:$("#tb_id").val()
+		});
+		debug("SDATA : "+sData);
+		debug("URL : "+requestURL);
+		$.ajax({
+		      type : "POST",
+		      url : requestURL,
+		      data : sData,
+		      dataType : "JSON",
+		      async: true,
+		      contentType:'application/json;charset=UTF-8',
+		      beforeSend: function() {
+		         $("#content").append(loading.on);
+		      },
+		      success : function(rData) {
+		    	  if(rData){
+		    		  $("#la_idCheck").html("<font color='red'>이미 사용중 또는 탈퇴한 아이디 입니다.</font>");
+		    	  } else {
+		    		  $("#la_idCheck").html("<font color='red'>사용가능한 아이디 입니다.</font>");
+		    	  }
+		      },
+		      error : function() {
+		    	  alert("error");
+		      },
+		      complete : function() {
+		         $(".loading").remove();
+		      }
+		   });
+	} else {
+		alert("아이디를 입력하세요");
+	}
+}
+
+/* 비밀번호 입력시 문구 */
+function setPw() {
+	$("#la_pwCheck").html("<font color='red'>비밀번호를 확인해주세요.</font>");
+}
+
+/* 비밀번호확인 입력시 문구 */
+function setPwCheck() {
+	if ($("#tb_pw").val() == $("#tb_rePw").val()){
+		$("#la_pwCheck").html("<font color='blue'>비밀번호가 일치합니다.</font>");
+	} else {
+		$("#la_pwCheck").html("<font color='red'>비밀번호가 일치하지 않습니다.</font>");
+	}
+}
+
+/* 카드 길이 확인 및 다음 번호 이동 */
+function cardNext(card) {
+	if ( card.val().length() == 4 ){
+		document.getElementById($(card).id+1).focus();
+	}
+}
+
+function selectCheck(takeElement){
+	var choice = $(takeElement).val();
+	if (choice == "all"){
+		$("#se_all").show();
+		$("#se_product").hide();
+		$("#se_date").hide();
+		$("#se_complete").hide();
+	} else if (choice == "product") {
+		$("#se_all").hide();
+		$("#se_product").show();
+		$("#se_date").hide();
+		$("#se_complete").hide();
+	} else if (choice == "day") {
+		$("#se_all").hide();
+		$("#se_product").hide();
+		$("#se_date").show();
+		$("#se_complete").hide();
+	} else if (choice == "status") {
+		$("#se_all").hide();
+		$("#se_product").hide();
+		$("#se_date").hide();
+		$("#se_complete").show();
+	}
+}
+
+/* 자동 '-' 생성 */
+function keyLength(takeElement){
+	var length = $(takeElement).val().length;
+	var value = $(takeElement).val();
+	var reg = /^[0-9]+$/;
+	debug($(takeElement).val()+" : value")
+	if (reg.test(value.charAt(length-1))?true:false) {
+		if ((length == 4)||(length == 7)){
+			$(takeElement).val(value+"-");
+		}
+	} else {
+		$(takeElement).val(value.slice(0,-1));
+	}
+}
+
+function searchCheck(takeElement){
+	var choice = $("#sel_visit").val();
+	if (choice == "all"){
+		$("#keyword").val($("#se_all").val())
+		getVisitRequest(takeElement);
+	} else if (choice == "product") {
+		debug($("#se_product").val())
+		if ($("#se_product").val().length > 0){
+			$("#keyword").val($("#se_product").val())
+			getVisitRequest(takeElement);
+		} else {alert("입력해주세요.")}
+	} else if (choice == "day") {
+		debug("date : "+$("#se_date").val())
+		if ($("#se_date").val().length > 0){
+			$("#keyword").val($("#se_date").val())
+			getVisitRequest(takeElement);
+		} else {alert("입력해주세요.")}
+	} else if (choice == "status") {
+		$("#keyword").val($("#se_complete").val())
+		getVisitRequest(takeElement);
+	}
+}
+
+function formChange(form){
+   var jsonstr = "{";
+      $.each($(form).serializeArray(), function(index, item){
+         jsonstr += (index != 0) ? ',' : '';
+         jsonstr += '"'+item.name+'":"'+item.value+'"'
+      });
+      jsonstr += "}";
+      return jsonstr;
+}
+
+//관리자 고객, 직원 리스트 조회
+function getMemberList(takeElement){
+	debug($(takeElement).val()+" : buttonvalue")
+	var requestURL = "get"+$(takeElement).val()+"List.do";
+	var sData = JSON.stringify({
+		keyword:$("#keyword").val()
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			for (var i = 0; i < rData.length; i++) {
+				ihtml += "<tr data-fn-name='getMemberInfo' data-key2='"+$(takeElement).val()+"' data-key='"+rData[i].memId+"' onclick='setOutsideHeadSeqRequest(this)'>";
+				ihtml += "<td>"+(i+1)+"</td><td>"+rData[i].memId+"</td>";
+				ihtml += "</tr>";
+			}
+			debug(ihtml);
+			$("#memberList tbody").html(ihtml);
+			$('.loading').remove();
+		},
+		error : function() {
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+//관리자 고객, 직원 정보
+function getMemberInfo(memberId, target) {
+	if (memberId == selectedHeadSeq) {
+		debug("already chosen")
+		return;
+	}
+	selectedHeadSeq = memberId;
+	var requestURL = "get"+target+"Info.do";
+	var sData = JSON.stringify({
+		memberId:memberId
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			$("#tb_memId").val(rData.memId);
+			$("#tb_memPw").val(rData.memPw);
+			$("#tb_memName").val(rData.memName);
+			$("#tb_memMobile").val(rData.memMobile);
+			$("#tb_memEntry").val(rData.memEntry);
+			$("#tb_memState").val(rData.memState);
+			$("#tb_memUpdate").val(rData.memUpdate);
+			
+			$("#tb_memWork").val(rData.memWork);
+			$("#tb_post").val(rData.memPost);
+			$("#tb_addr").val(rData.memAddr);
+			$("#tb_addD").val(rData.memAddD);
+			$("#sel_card").val(rData.memCardSel); //카드사
+			if((typeof(rData.memCard) != 'undefined') && (rData.memCard != null)){
+				debug(rData.memCard + ": card")
+				$("#tb_card1").val(rData.memCard.substring(0,4));
+				$("#tb_card2").val(rData.memCard.substring(4,8));
+				$("#tb_card3").val(rData.memCard.substring(8,12));
+				$("#tb_card4").val(rData.memCard.substring(12));
+			}
+			$("#sel_account").val(rData.memAccountSel);  //은행
+			$("#tb_memAccount").val(rData.memAccount);
+			$("#la_lastUpdate").html("최근 상태 변경 일자   "+rData.memUpdate);
+			$("#tb_auId").val(rData.memAuId);
+			$("#bt_insert").hide();
+		},
+		error : function() {
+			alert("검색실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+function setDateCheck(takeElement) {
+	if ($("#hi_outDay").val().length > 0){
+		getMemberChange(takeElement);
+	} else {
+		alert("날짜입력");
+	}
+}
+
+//관리자 고객, 직원 정보 전체 변경 , 직원 등록, 회수결과 처리
+function getMemberChange(takeElement) {
+	var requestURL = $(takeElement).parents("form").attr("action");
+	var sData = formChange($(takeElement).parents("form"));
+	
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug("click : "+rData.length);
+			debug("click : "+rData);
+			if(rData){
+				alert("성공1");
+			}else{
+				alert("실패1");
+			}
+			if(requestURL == "addCompanionJoin.do"){
+				$("#tb_memId").val("");
+				$("#tb_memPw").val("");
+				$("#tb_memName").val("");
+				$("#tb_memMobile").val("");
+				$("#tb_memEntry").val("");
+				$("#tb_memWork").val("");
+				$("#tb_memState").val("");
+				$("#tb_memId").val("");
+			} else if(requestURL == "setRentalRefundResult.do"){
+				getVisitRequest(takeElement);
+			}
+		},
+		error : function() {
+			alert("검색실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+function setMemberItemChange(takeElement) {
+	var requestURL = "setMemberItemChange.do";
+	var sData = formChange($(takeElement).parents("tr").find("input"))+formChange($("#tr_memId").find("input"))+formChange($(takeElement).parents("tr").find("select"));
+	debug("aa : "+sData)
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug("click : "+rData.length);
+			debug("click : "+rData);
+			if(rData){
+				alert("성공");
+			}else{
+				alert("실패");
+			}
+		},
+		error : function() {
+			alert("검색실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+//직원 등록시 비밀번호 랜덤 생성
+function donghun(){
+	var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    for( var i=0; i < 8; i++)
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    $("#tb_memPw").val(text);
+}
+
+//버튼 나와랍
+function insertOn(){
+	$("#bt_insert").show();
+}
+
+//아이디 순차 부어
+function setRandomId(){
+	$.ajax({
+		type : "POST",
+		url : "getNewId.do",
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			$("#tb_memId").val(rData);
+		},
+		error : function() {
+			alert("검색실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+//상담 페이지 제품 상태별 수량
+function getProductCount(){
+	var sData = JSON.stringify({
+		itId:$("#tb_itId").val(),
+		itName:$("#tb_itName").val()
+	});
+	$.ajax({
+		type : "POST",
+		url : "getProductCount.do",
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug(rData + " : item")
+			$("#tb_itName").val(rData.itName);
+			$("#tb_waitCount").val(rData.waitCount);
+			$("#tb_doCount").val(rData.doCount);
+			$("#tb_refundCount").val(rData.refundCount);
+			$("#tb_itPeriod").val(rData.itPeriod);
+			$("#tb_itPrice").val(rData.itPrice);
+		},
+		error : function() {
+			alert("검색결과 업습니다.");
+			$("#tb_itId").val("");
+			$("#tb_itName").val("");
+			$("#tb_waitCount").val("");
+			$("#tb_doCount").val("");
+			$("#tb_refundCount").val("");
+			$("#tb_itPeriod").val("");
+			$("#tb_itPrice").val("");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+function setAddCustomerCheckF() {
+	$("#bt_temporary").prop("disabled", false);
+}
+
+function setAddCustomerCheckT() {
+	$("#bt_temporary").prop("disabled", true);
+}
+
+//임시회원등록
+function temporary(takeElement){
+	var sData = JSON.stringify({
+		memberName:$(takeElement).parents("form").children().find("#tb_cuName").val(),
+		memberMobile:$("#tb_cuMobile").val(),
+		memberBirth:$(takeElement).parents("form").children().find("#tb_cuBirth").val()
+	});
+	debug(sData)
+	$.ajax({
+		type : "POST",
+		url : "addTempCustomer.do",
+		data : sData,
+		dataType : "text",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			if(rData.length > 0){
+				$(takeElement).parents("form").children().find("#tb_cuId").val(rData);
+				$(takeElement).parents("form").children().find("#tb_cuResult").val("가입 성공");
+			} else {
+				$(takeElement).parents("form").children().find("#tb_cuResult").val("가입 실패");
+			}
+		},
+		error : function() {
+			alert("검색결과 업습니다.");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+function defaultDate() {
+	var date1 = new Date($("#tb_start").val());
+	var date2 = new Date($("#tb_start").val());
+	date2.setMonth(date1.getMonth() + 36)
+	$("#tb_end").val(date2.toISOString().slice(0,10));
+}
+
+function buyMethod(takeElement) {
+	var method = $(takeElement).val();
+	if (method == "account"){
+		$("#sel_card").hide();
+		$("#sel_account").show();
+		$("#tb_methodNum").prop("readonly", false);
+	} else if (method == "card") {
+		$("#sel_card").show();
+		$("#sel_account").hide();
+		$("#tb_methodNum").prop("readonly", false);
+	} else {
+		$("#sel_card").hide();
+		$("#sel_account").hide();
+		$("#tb_methodNum").prop("readonly", true);
+	}
+}
+
+//상담 등록
+function checkAdvice() {
+	var adviceId="";
+	
+	if ($("#cb_group:checked").length > 0){
+		adviceId = addAdviceId();
+		debug(adviceId+" : ad ID")
+		if (adviceId.length > 0) {
+			$("#cb_group:checked").each(function(index, item){
+				if (item.value == "nomal") {
+					setNomalAdvice(adviceId);
+				}
+				if(item.value == "rental") {
+					setRentalAdvice(adviceId);
+				}
+				if(item.value == "as") {
+					setAsAdvice(adviceId);
+				} 
+				if(item.value == "refund") {
+					setRefundAdvice(adviceId);
+				}
+				});
+		} else {
+			alert("상담 등록 실패")
+		}
+	}
+	
+}
+
+// 상담 아이디 가져오기
+function addAdviceId() {
+	var result="";
+	$.ajax({
+		type : "POST",
+		url : "addAdviceId.do",
+		dataType : "text",
+		async: false,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			if (rData != null){
+				debug(rData + " : advice Id")
+				result = rData;
+			}
+		},
+		error : function() {
+			alert("검색결과 없습니다.");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+	return result;
+}
+
+function setNomalAdvice(adviceId) {
+	var sData = formChange($("#nomalAdviceForm")) + JSON.stringify({
+		adviceId:adviceId
+	});
+	$.ajax({
+		type : "POST",
+		url : "addNomalAdvice.do",
+		data : sData,
+		dataType : "json",
+		async: false,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug(rData + " : Nomal Advice")
+		},
+		error : function() {
+			alert("검색결과 업습니다.");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+function setRentalAdvice(adviceId) {
+	var sData = formChange($("#rentalAdviceForm")) + JSON.stringify({
+		adviceId:adviceId,
+		tb_mobile:$("#tb_mobile").val()
+	});
+	$.ajax({
+		type : "POST",
+		url : "addRentalAdvice.do",
+		data : sData,
+		dataType : "json",
+		async: false,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug(rData + " : Rental Advice")
+		},
+		error : function() {
+			alert("검색결과 업습니다.");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+function qrCreate(){
+	$.ajax({
+		type : "POST",
+		url : "addQrCode.do",
+		dataType : "json",
+		async: false,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			debug(rData + " : Rental Advice")
+		},
+		error : function() {
+			alert("검색결과 업습니다.");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+function uploadTest(){
+	alert("aa")
+	$('#fileTestForm').ajaxForm({
+		type : "POST",
+		url : "uploadTest.do",
+		dataType : "text",
+		async: false,
+		method: "post",
+		enctype: "multipart/form-data",
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+			return false;
+		},
+		success : function(rData) {
+			debug("rData : " + rData);
+			alert("이미지 등록완료!!");
+		},
+		error:function(){
+			alert("이미지 등록실패!!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+	$("#fileTestForm").submit();
+}
+
+function changeColor(color){
+	$("#aaaa").css("background-color", color);
+}
+
+
+///* ======================================== by 이민정 ================================================= */
+
+/*비밀번호변경 확인*/
 function checkPw(){
 	if($("#newpw").val() != $("#checkpw").val()){
 		alert("입력하신 새 비밀번호 불일치");
@@ -22,35 +2495,843 @@ function checkPw(){
 	}
 }
 
-//rentalDetail 품목 아이디 가져오기
+/*rentalDetail 품목 아이디 가져오기*/
 function getItemId(element){
 	var itemId = $(element).data("code");
 	location.href = "rentaldetail.do?itemId="+itemId;
 }
 
-//rental품목 아이디 가져오기
+/*rental품목 아이디 가져오기*/
 function getId(element){
 	var itemId = $(element).data("code");
 	location.href = "rental.do?itemId="+itemId;
 }
 
-//결제수단  카드선택
+/*결제수단  카드선택*/
 function showCard(){
 	$("#paymentCard").css("display","block");
+	$("#paymentAccount").css("display","none");
 	$("#paymentCash").css("display","none");
+	$("#paymentCard input").attr("required",true);
+	$("#paymentCard select").attr("required",true);
+	$("#paymentCash input").attr("required",false);
+	$("#paymentCash select").attr("required",false);
+	$("#paymentCash select").val('');
+	$("#paymentCash input").val('');
 }
 
-//결제수단 현금선택
+/*결제수단 계좌이체선택*/
+function showAccount(){
+	$("#paymentCard").css("display","none");
+	$("#paymentAccount").css("display","block");
+	$("#paymentCash").css("display","none");
+	$("#paymentCash input").attr("required",true);
+	$("#paymentCash select").attr("required",true);
+	$("#paymentCard input").attr("required",false);
+	$("#paymentCard select").attr("required",false);
+	$("#paymentCard select").val('');
+	$("#paymentCard input").val('');
+}
+
 function showCash(){
 	$("#paymentCard").css("display","none");
+	$("#paymentAccount").css("display","none");
 	$("#paymentCash").css("display","block");
+	$("#paymentCash input").attr("required",false);
+	$("#paymentCash select").attr("required",false);
+	$("#paymentCard input").attr("required",false);
+	$("#paymentCard select").attr("required",false);
+	$("#paymentCard select").val('');
+	$("#paymentCard input").val('');
+	$("#paymentCash select").val('');
+	$("#paymentCash input").val('');
 }
 
-//렌탈 기간 설정
+/*렌탈 기간 설정*/
 function setDate(element){
 	var startDate = $(element).val().split("-");
-	var endDate = new Date(parseInt(startDate[0]) + 3, parseInt(startDate[1]), parseInt(startDate[2])-1);
-	console.log(endDate.getFullYear());
-	$("#end").val();
+	var year = parseInt(startDate[0])+($('#period').val()/12);
+	var month = startDate[1];
+	var date = startDate[2];
+	$("#end").val(year+'-'+month+'-'+date);
+	var today = new Date();
+	year = today.getFullYear();
+	month = today.getMonth()+1;
+	date = today.getDate();
+	if(month < 10) {
+		month = '0' + month;
+	}
+	if(date < 10) {
+		date = '0' + date;
+	}
+	$("#start").attr('min', year+'-'+month+'-'+date);
+}
+/* 점검결과조회 날짜 선택*/
+function dateLock(element){
+	var startDate = $(element).val().split("-");
+	var year = parseInt(startDate[0]);
+	var month = parseInt(startDate[1]);
+	var date = parseInt(startDate[2]);
+	console.log(year);
+	console.log(month);
+	console.log(date);
+	if(month < 10) {
+		month = '0' + month;
+	}
+	if(date < 10) {
+		date = '0' + date;
+	}
+	$("#end").attr('min', year+'-'+month+'-'+date);
+}
+
+/* 입고요청조회 */
+function getInputRequest(key) {
+	var takeData = key;
+	var requestURL = "getinputrequest.do";
+	var sData = JSON.stringify({
+		inputState:takeData
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				ihtml += "<tr data-input-id='"+ row.id
+					+"' data-item-name='"+ row.name
+					+"' data-item-count='"+ row.count
+					+"' data-item-state='"+ row.state
+					+"' data-item-date='"+ row.date
+					+"' data-item-delivery='"+ row.delivery
+					+"'>";
+				ihtml += "<td>"+row.id+
+					"</td><td>"+row.name+
+					"</td><td>"+row.count+
+					"</td><td>"+row.date+
+					"</td><td>"+row.delivery+
+					"</td><td><button class='btn btn-primary btn-sm' onclick='inputRequest(this)'>입고</button></td></tr>";
+			}
+			debug(ihtml);
+			$("#inputList").html(ihtml);
+			if ($(".table-success").data("flag") == "true") {
+				$("table button").attr("disabled", true);
+			}
+		},
+		error : function() {
+			alert("검색실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+/* 요청입고 등록 */
+function inputRequest(takeElement) {
+	var requestURL = "setinputstate.do";
+	var sData = JSON.stringify({
+		id:$(takeElement).parents("tr").data("input-id"),
+		state:$(takeElement).parents("tr").data("item-state")
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			alert(rData.result);
+			$(takeElement).attr("disabled", true);
+		},
+		error : function() {
+			alert("입고실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 요청 입고 검색 */
+function searchInputRequest() {
+	var requestURL = "searchinputrequest.do";
+	var sData = JSON.stringify({
+		state:getHeadSeqRequest(),
+		name:$("#searchInput").val()
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				ihtml += "<tr data-input-id='"+ row.id
+					+"' data-item-name='"+ row.name
+					+"' data-item-count='"+ row.count
+					+"' data-item-state='"+ row.state
+					+"' data-item-date='"+ row.date
+					+"' data-item-delivery='"+ row.delivery
+					+"'>";
+				ihtml += "<td>"+row.id+
+					"</td><td>"+row.name+
+					"</td><td>"+row.count+
+					"</td><td>"+row.date+
+					"</td><td>"+row.delivery+
+					"</td><td><button class='btn btn-primary btn-sm' onclick='inputRequest(this)'>입고</button></td></tr>";
+			}
+			debug(ihtml);
+			$("#inputList").html(ihtml);
+			if ($(".table-success").data("flag") == "true") {
+				$("table button").attr("disabled", true);
+			}
+		},
+		error : function() {
+			alert("검색실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+/* 입고 자산상태별 조회*/
+function getInput(key){
+	var takeData = key;
+	var requestURL = "getinput.do";
+	var sData = JSON.stringify({
+		state:takeData
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				
+				ihtml += "<tr data-input-id='"+ row.id
+					+"' data-item-name='"+ row.name
+					+"' data-item-count='"+ row.count
+					+"' data-item-state='"+ row.state
+					+"' data-item-date='"+ row.date
+					+"' data-item-delivery='"+ row.delivery
+					+"' data-item-qr='"+ row.qr+"'>";
+				ihtml += "<td>"+row.id+
+					"</td><td>"+row.name+
+					"</td><td>"+row.count+
+					"</td><td>"+row.date+
+					"</td><td>"+row.delivery+
+					"</td><td></td></tr>";
+			}
+			debug(ihtml);
+			$("#inputList").html(ihtml);
+			if ($(".table-success").data("flag") == "true") {
+				$("table button").attr("disabled", true);
+			}
+		},
+		error : function() {
+			alert("검색실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+/* 입고 제품명 검색 조회*/
+function searchInput(){
+	var requestURL = "searchinput.do";
+	var sData = JSON.stringify({
+		state:getHeadSeqRequest(),
+		name:$("#searchInput").val()
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				ihtml += "<tr data-input-id='"+ row.id
+					+"' data-item-name='"+ row.name
+					+"' data-item-count='"+ row.count
+					+"' data-item-state='"+ row.state
+					+"' data-item-date='"+ row.date
+					+"' data-item-delivery='"+ row.delivery
+					+"' data-item-qr='"+ row.qr+"'>";
+				ihtml += "<td>"+row.id+
+					"</td><td>"+row.name+
+					"</td><td>"+row.count+
+					"</td><td>"+row.date+
+					"</td><td>"+row.delivery+
+					"</td><td></td></tr>";
+			}
+			debug(ihtml);
+			$("#inputList").html(ihtml);
+		},
+		error : function() {
+			alert("검색실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 점검대기 정보 검색 조회 */
+function getRepairList(){
+	var requestURL = "getrepairlist.do";
+	var sData = JSON.stringify({
+		keyword:$("#keyword").val(),
+		select:$("#type").val()
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+		
+			for (var i = 0; i < rData.length; i++) {
+				ihtml += "<tr class='is-line' data-fn-name='getrepairform(headElement)' data-key='"+rData[i].id+ "'data-itid='"+rData[i].itemId+"'data-productstate='"+rData[i].state+"'data-itname='"+rData[i].itemName+"' onclick='setHeadSeqRequest(this)'>";
+				ihtml += "<td>"+rData[i].id+"</td><td>"+rData[i].itemName+"</td>"+"<td>"+rData[i].state+"</td><td>"+rData[i].date+"</td>";
+				ihtml += "</tr>";
+			}
+			debug(ihtml);
+			$("#repairList tbody").html(ihtml);
+			$('.loading').remove();
+			
+		},
+		error : function() {
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+/* 점검내역 폼 가져오기*/
+function getrepairform(takeElement){
+	var takeData = $(takeElement).data('key');
+	var requestURL = "getrepairform.do";
+	var sData = JSON.stringify({
+		id:takeData,
+		state:$(takeElement).data('productstate')
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			$("#productId").val(rData.productId);
+			$("#itemId").val(rData.itemId);
+			$("#itemName").val(rData.itemName);
+			$("#repairDate").val(rData.todayDate);
+			$("#repairContents").val(rData.repairContent);
+			
+			//
+			//if ($(".table-success").data("flag") == "true") {
+			//	$('#bt_addRepairResult').attr("disabled", true);
+			//}
+			
+		},
+		error : function() {
+			alert("폼으로 가져오기 실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+function useParts(){
+	document.getElementById("useParts").value += $("#parts").val()+" ";
+}
+
+function resetParts(){
+	document.getElementById("useParts").value = "";
+}
+
+function resetForm(){
+	$("#repairContents").val('');
+	$("#useParts").val('');
+	$("#repairSort").val('');
+	$("#parts").val('');
+}
+
+/* 점검내역 폼에 부품 가져오기*/
+function getPartsList(key){ 
+	var takeData = $(key).data('itid');
+	var requestURL = "getpartslist.do";
+	var sData = JSON.stringify({
+		id:takeData
+		
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+			$("#parts tbody").remove();
+			$('#parts').parents('td').children('div').remove();
+			$('#parts').css('display', 'table');
+		},
+		success : function(rData) {
+			debug(rData.length);
+			debug(rData);
+			if (rData.length > 0) {
+				var tbody = $('<tbody />', {});
+				for (var i = 0; i < rData.length; i++) {
+					var tr = $('<tr />',{});
+					$(tr).data('part-id', rData[i].partId);
+					$(tr).data('part-name', rData[i].partName);
+					$(tr).data('part-count', rData[i].partCount);
+					$(tr).append($('<td />', {text: rData[i].partId}));
+					$(tr).append($('<td />', {text: rData[i].partName}));
+					$(tr).append($('<td />', {text: rData[i].partCount}));
+					$(tr).append($('<td />', {}).append(
+							$('<input />', {
+								name : rData[i].partId,
+								type: 'number',
+								max: rData[i].partCount,
+								min: '0',
+								step: '1',
+								value:'0',
+								class: 'from-control'
+							}))
+					)
+					$(tbody).append(tr);
+				}
+				$('#parts').append(tbody);
+			} else {
+				$('#parts').parents('td').append($('<div />', {text: '조회된 결과가 없습니다.', class: 'card border-warning'}))
+				$('#parts').css('display', 'none');
+			}
+		},
+		error : function() {
+			alert("부품가져오기 실패!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+/* 수리내역 등록 */
+function addRepairResult(takeElement) {
+	debug(getUsePartsList("form[name=partsInputForm]"));
+	var requestURL = "addrepairresult.do";
+	/*var sData = getUsePartsList("#repairResultForm");*/
+	var sData = JSON.stringify({
+		repairId:$("#productId").val(),
+		itName:$("#itemName").val(),
+		productId:$("#productId").val(),
+		engineerId:$("#engineerId").val(),
+		engineerName:$("#engineerName").val(),
+		repairSort:$("#repairSort").val(),
+		state:$("#productId").val(),
+		repairDate:$("#repairDate").val(),
+		repairContent:$("#repairContents").val(),
+		list:JSON.parse(getUsePartsList("form[name=partsInputForm]"))
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+		
+			switch (rData.result) {
+			case "success":
+				msgBox = new MsgWindow('plain');
+				msgBox.setMessage('점검등록성공!',' 점검결과가 정상적으로 등록되었습니다.');
+				msgBox.setButton('확인','MsgWindow.hide(this)');
+				msgBox.show();
+				break;
+			case "invalid":
+				var msg = new MsgWindow('invalid');
+				msg.setMessage('점검등록오류','입력한 점검결과가 존재하지 않거나, 변경할 수 없는 상태입니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "violated":
+				var msg = new MsgWindow('violated');
+				msg.setMessage('정책위반','정책위반이 발생하였습니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "network":
+				var msg = new MsgWindow('error');
+				msg.setMessage('네트워크 오류','네트워크에 문제가 있습니다. 관리자에게 문의하십시오.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			}
+			document.location="gorepairlist.do";
+			//
+			//$(takeElement).attr("disabled", true);
+			
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+function repairFormCheck(){
+	if(document.getElementById("repairSort") == null){
+		alert('분류미선택');
+		return;
+	}else if(document.getElementById("repairContents") == null){
+		alert('점검내역미입력');
+		return;
+	}
+}
+/* 우편번호 */
+function getPost() {
+   new daum.Postcode({
+        oncomplete: function(data) {
+            var fullAddr = '';
+            var extraAddr = '';
+
+            if (data.userSelectedType === 'R') {
+                fullAddr = data.roadAddress;
+            } else {
+                fullAddr = data.jibunAddress;
+            }
+
+            if(data.userSelectedType === 'R'){
+                if(data.bname !== '') {
+                    extraAddr += data.bname;
+                }
+                if(data.buildingName !== '') {
+                    extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                }
+                fullAddr += (extraAddr !== '' ? ' ('+ extraAddr +')' : '');
+            }
+            $("#tb_post").val(data.zonecode);
+            $("#tb_addr").val(fullAddr);
+            document.getElementById('tb_addD').focus();
+        }
+    }).open();
+}
+
+/*json으로 가져오기*/
+function getUsePartsList(form){
+	var jsonstr = "{";
+	$.each($(form).serializeArray(), function(index, item){ 
+		if(item.value != 0) { 
+			jsonstr += '"'+item.name+'":"'+item.value+'",'; 
+			}});
+	jsonstr = (jsonstr.length == 1)? null : jsonstr.substr(0, jsonstr.length - 1) + "}";
+	return jsonstr;
 	
 }
+
+/* 모든 부속품 리스트 가져오기*/
+function getAllPartsList(){
+	var requestURL = "getallpartslist.do";
+	var sData = JSON.stringify({
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				var message = "";
+				if(row.partSafety != null && parseInt(row.partTotal) <= parseInt(row.partSafety)){
+					message = "부속품 주문요청";
+				}
+				ihtml += "<tr data-parts-id='"+ row.partId
+					+"' data-parts-model='"+ row.partModel
+					+"' data-parts-search='"+ row.partSearch
+					+"' data-item-id='"+ row.itemId
+					+"' data-parts-manufacturer='"+ row.partManufacturer
+					+"' data-parts-total='"+ row.partTotal
+					+"' data-parts-safety='"+ row.partSafety+"'>";
+				ihtml += "<td>"+row.partId+
+					"</td><td>"+row.partModel+
+					"</td><td>"+row.partSearch+
+					"</td><td>"+row.itemId+
+					"</td><td>"+row.partManufacturer+
+					"</td><td>"+row.partTotal+
+					"</td><td>"+row.partSafety+
+					"</td><td  style='color: red'>"+message+"</td></tr>";
+			}
+			debug(ihtml);
+			$("#partsList").html(ihtml);
+		},
+		error : function() {
+			alert("부속품가져오기실패!!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+/* 모든 수리결과 리스트 가져오기*/
+function getAllRepairResultList(){
+	var requestURL = "getallrepairresultlist.do";
+	var sData = JSON.stringify({
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				
+				ihtml += "<tr data-repair-id='"+ row.repairId
+					+"' data-item-name='"+ row.itemName
+					+"' data-product-id='"+ row.productId
+					+"' data-repair-date='"+ row.repairDate
+					+"' data-repair-state='"+ row.repairState
+					+"' data-engineer-id='"+ row.engineerId
+					+"' data-engineer-name='"+ row.engineerName
+					+"' data-repair-sort='"+ row.repairSort
+					+"' data-repair-content='"+ row.repairContent
+					+"' id='"+ row.engineerId+"'>";
+				ihtml += "<td>"+row.repairId+
+					"</td><td>"+row.itemName+
+					"</td><td>"+row.productId+
+					"</td><td>"+row.repairContent+
+					"</td><td>"+row.repairDate+
+					"</td><td>"+row.repairSort+"</td></tr>";
+			}
+			debug(ihtml);
+			$("#repairResultList").html(ihtml);
+		},
+		error : function() {
+			alert("수리결과초기리스트가져오기 실패!!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+/* 부품 검색*/
+function getSearchPartsList(){
+	var requestURL = "getsearchpartslist.do";
+	var sData = JSON.stringify({
+		searchType : $("#searchType").val(),
+		searchKeyword : $("#searchParts").val()
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				var message = "";
+				if(row.partSafety != null && parseInt(row.partTotal) <= parseInt(row.partSafety)){
+					message = "부속품 주문요청";
+				}
+				ihtml += "<tr data-parts-id='"+ row.partId
+					+"' data-parts-model='"+ row.partModel
+					+"' data-parts-search='"+ row.partSearch
+					+"' data-item-id='"+ row.itemId
+					+"' data-parts-manufacturer='"+ row.partManufacturer
+					+"' data-parts-total='"+ row.partTotal
+					+"' data-parts-safety='"+ row.partSafety+"'>";
+				ihtml += "<td>"+row.partId+
+					"</td><td>"+row.partModel+
+					"</td><td>"+row.partSearch+
+					"</td><td>"+row.itemId+
+					"</td><td>"+row.partManufacturer+
+					"</td><td>"+row.partTotal+
+					"</td><td>"+row.partSafety+
+					"</td><td  style='color: red'>"+message+"</td></tr>";
+			}
+			debug(ihtml);
+			$("#partsList").html(ihtml);
+		},
+		error : function() {
+			alert("부품 검색 실패!!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+
+		
+	});
+}
+/* 점검결과 조회*/
+function getRepairResultList(){
+	var requestURL = "getrepairresultlist.do";
+	var sData = JSON.stringify({
+		startDate : $("#start").val(),
+		endDate : $("#end").val(),
+		repairSort : $("#repairResultSort").val(),
+	});
+	debug(sData);
+	debug(requestURL);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : sData,
+		dataType : "JSON",
+		async: true,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			var ihtml = "";
+			debug(rData.length);
+			debug(rData);
+			for (var i = 0; i < rData.length; i++) {
+				var row = rData[i];
+				
+				ihtml += "<tr data-repair-id='"+ row.repairId
+					+"' data-item-name='"+ row.itemName
+					+"' data-product-id='"+ row.productId
+					+"' data-repair-date='"+ row.repairDate
+					+"' data-repair-state='"+ row.repairState
+					+"' data-engineer-id='"+ row.engineerId
+					+"' data-engineer-name='"+ row.engineerName
+					+"' data-repair-sort='"+ row.repairSort
+					+"' data-repair-content='"+ row.repairContent
+					+"' id='"+ row.engineerId
+					+"'>";
+				ihtml += "<td>"+row.repairId+
+					"</td><td>"+row.itemName+
+					"</td><td>"+row.productId+
+					"</td><td>"+row.repairContent+
+					"</td><td>"+row.repairDate+
+					"</td><td>"+row.repairSort+"</td></tr>";
+			}
+			debug(ihtml);
+			$("#repairResultList").html(ihtml);
+		},
+		error : function() {
+			alert("점검결과 조회 실패!!");
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+}
+
+

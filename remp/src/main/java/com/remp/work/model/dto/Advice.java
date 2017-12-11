@@ -5,7 +5,7 @@ import java.io.Serializable;
 public class Advice implements Serializable {
 	private String id;
 	private String sort;
-	private String sortName;
+	private String day;
 	private String content;
 	private String buyId;
 	private String emId;
@@ -16,20 +16,20 @@ public class Advice implements Serializable {
 	public Advice() {
 		super();
 	}
-	
+
 	/**
 	 * @param id
 	 * @param sort
-	 * @param sortName
+	 * @param day
 	 * @param content
 	 * @param buyId
 	 * @param emId
 	 */
-	public Advice(String id, String sort, String sortName, String content, String buyId, String emId) {
+	public Advice(String id, String sort, String day, String content, String buyId, String emId) {
 		super();
 		this.id = id;
 		this.sort = sort;
-		this.sortName = sortName;
+		this.day = day;
 		this.content = content;
 		this.buyId = buyId;
 		this.emId = emId;
@@ -64,17 +64,17 @@ public class Advice implements Serializable {
 	}
 
 	/**
-	 * @return the sortName
+	 * @return the day
 	 */
-	public String getSortName() {
-		return sortName;
+	public String getDay() {
+		return day;
 	}
 
 	/**
-	 * @param sortName the sortName to set
+	 * @param day the day to set
 	 */
-	public void setSortName(String sortName) {
-		this.sortName = sortName;
+	public void setDay(String day) {
+		this.day = day;
 	}
 
 	/**
