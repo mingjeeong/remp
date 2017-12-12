@@ -2989,6 +2989,10 @@ function getPartsList(key){
 	});
 }
 
+function redirectPage(url) {
+	window.location.href = url;
+}
+
 /* 수리내역 등록 */
 function addRepairResult(takeElement) {
 	debug(getUsePartsList("form[name=partsInputForm]"));
@@ -3024,7 +3028,7 @@ function addRepairResult(takeElement) {
 			case "success":
 				msgBox = new MsgWindow('plain');
 				msgBox.setMessage('점검등록성공!',' 점검결과가 정상적으로 등록되었습니다.');
-				msgBox.setButton('확인','MsgWindow.hide(this)');
+				msgBox.setButton('확인', "redirectPage('gorepairlist.do')");
 				msgBox.show();
 				break;
 			case "invalid":
@@ -3046,9 +3050,8 @@ function addRepairResult(takeElement) {
 				msg.show();
 				break;
 			}
-			document.location="gorepairlist.do";
-			//
-			//$(takeElement).attr("disabled", true);
+			
+			//document.location="gorepairlist.do";
 			
 		},
 		error : function() {

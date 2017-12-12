@@ -662,7 +662,6 @@ public class DefaultControl extends ControllerAdapter {
 		}
 		
 		
-		
 		/**
 		 * 요청자산 조회로 이동
 		 * @return
@@ -751,7 +750,6 @@ public class DefaultControl extends ControllerAdapter {
 		public ModelAndView goRepairList(HttpSession session) {
 			ModelAndView mv = getHeadDetailPage("addrepairresulthead.jsp", "addrepairresultdetail.jsp");
 			ArrayList<Product> list = assetService.getRepairList();
-			System.out.println("gd");
 			if(list != null) {
 				mv.addObject("list", list);
 			}
