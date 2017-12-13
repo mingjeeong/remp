@@ -18,7 +18,7 @@
 		<% if (id == null || id.trim().isEmpty()) { %>
 		<a class="btn btn-primary btn-lg" href="gofindid.do">아이디 찾기</a>
 		<% } %>
-		<a class="btn btn-primary btn-lg" href="gologin.do">로그인 하기</a>
-		<a class="btn btn-primary btn-lg" href="gofindpw.do">비밀번호 찾기</a>
+		<a class="btn btn-primary btn-lg" href="goLogin.do">로그인 하기</a>
+		<a class="btn btn-primary btn-lg" href="goFindPw.do">비밀번호 찾기</a>
 	</p>
 </div>

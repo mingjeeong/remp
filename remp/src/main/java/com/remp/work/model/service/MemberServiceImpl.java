@@ -85,5 +85,4 @@ public class MemberServiceImpl implements MemberService{
 	public String getRandomEmpl() {
 		return memberDao.selectRandomEmpl();
 	}
-
 }

@@ -1,8 +1,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 <!-- detail -->
-<div id="productInsert" style="display:inline">
+<div id="productInsert" >
 	<div class="item_wrapper" align="center" style="border-bottom: solid; margin-bottom: 10px">
 		<h3>자산등록</h3>
 	</div>
@@ -14,12 +13,12 @@
         	등록하실 사진파일을 선택하여 주세요.<br>
         	사진파일 미 선택시 변경이 불가능하게 만들어야지
         </small>
-		<input type="hidden" id="fi_prId" name="fi_prId" >
+		<input type="hidden" id="fi_itId" name="fi_itId" >
 	</div>
 	</form>
 	<form id="insertProductForm" name="insertProductForm">
 		<div style="width: 55%; height: 75%; overflow: scroll; float:left;" align="center">
-			<table style="width:100%;" align="center" >
+			<table class="is-line" style="width:100%;" align="center" >
 				<tr>
 					<td>
 						<label style="width: 170px">자산ID</label>
@@ -33,7 +32,7 @@
 						<label>품목ID</label>
 					</td>
 					<td>
-						<input type="text" id="tb_itId" name="tb_itId"  class="prUpdate form-control">
+						<input type="text" id="tb_itId" name="tb_itId"  class="prUpdate form-control" >
 					</td>
 				</tr>
 				<tr>
@@ -100,6 +99,7 @@
 					</td>
 					<td>
 						<select id="sb_prState" name="sb_prState"  class="prUpdate prUpdate form-control">
+							<option value="none">상태를 선택하세요</option>
 							<option value="re_ninput">신규입고요청</option>
 							<option value="re_npart">신규수리부속요청</option>
 							<option value="re_nother">신규기타자산입고요청</option>
@@ -117,8 +117,6 @@
 							<option value="wa_repair">수리대기</option>
 							<option value="do_product">영업중</option>
 							<option value="do_disuse">폐기</option>
-							<option value="As">A/S요청</option>
-							<option value="Refund">회수요청</option>
 						</select>
 					</td>
 				</tr>
@@ -170,14 +168,6 @@
 					</td>
 					<td>
 						<textarea rows="4" cols="40" id="tb_itContent" name="tb_itContent" class="prUpdate form-control" style="resize: none;"></textarea>
-					</td>
-				</tr>
-				<tr>
-					<td>
-						<label>QR코드</label>
-					</td>
-					<td>
-						<input type="text" id="tb_prQr" name="tb_prQr"  class="prUpdate form-control">
 					</td>
 				</tr>
 			</table>

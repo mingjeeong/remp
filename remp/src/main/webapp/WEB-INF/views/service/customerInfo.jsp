@@ -1,6 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
-<%@ page session="false" %>
+<h3 align="center">고객 정보 변경</h3>
 <form id="customerInfoForm" name="customerInfoForm" method="post" action="setMemberChange.do">
 <table class="table table-striped" style="margin-top:30px;">
 	<tr id="tr_memId">
@@ -126,7 +126,7 @@
 			<label id="la_lastUpdate" style="color: red;"></label>
 		</td>
 		<td colspan="3" align="center">
-			<input type="hidden" name="target" value="${target}">
+			<input type="hidden" id="target" name="target" value="${target}">
 			<input type="button" class="btn btn-primary btn-lg" value="일괄변경" onclick="getMemberChange(this)">
 		</td>
 	</tr>

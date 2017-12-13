@@ -10,10 +10,17 @@
 
 	<http use-expressions="true" auto-config='true'>
 	    <intercept-url pattern="/**" access="permitAll"/>
+	    <!-- <intercept-url pattern="/goLogin.do" access="isAnonymous"/> -->
+	    <!-- <intercept-url pattern="/getinputrequest.do" access="isAnonymous()"/> -->
 
 
-	    <form-login />
-	    <http-basic />
+<!-- 	    <form-login 
+	    login-page="/goLogin.do" 
+	    default-target-url="/" 
+	    authentication-failure-url="/goFoundError.do" 
+	    username-parameter="tb_inputId" 
+	    password-parameter="tb_inputPw" /> -->
+
 	    <logout invalidate-session="true" logout-url="/logout.do" logout-success-url="/" />
 	</http>
 	

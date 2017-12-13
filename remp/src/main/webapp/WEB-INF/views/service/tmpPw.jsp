@@ -1,6 +1,5 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 <%@page import="java.util.Map"%>
 <%@page import="java.util.List"%>
 <%@page import="javax.mail.Transport"%>
@@ -47,7 +46,7 @@
 	        msg.setSubject(title); //  제목
 	     
 	        StringBuffer buffer = new StringBuffer();
-	        buffer.append("회원님의 임시비밀번호는 ' " + result +" ' 입니다.");
+	        buffer.append("회원님의 임시비밀번호는 <font color='red' style='font-weigth: bold; font-size: 20px;'>" + result +"</font> 입니다.<p>");
 	        buffer.append("로그인 후 변경하여주세요.");
 	        Address fromAddr = new InternetAddress(from);
 	        msg.setFrom(fromAddr); 

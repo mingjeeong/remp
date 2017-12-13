@@ -160,6 +160,7 @@ public class MemberDaoImpl implements MemberDao{
 		return null;
 	}
 	
+	//관리자 직원 조회
 	@Override
 	public List<Map<String, String>> selectMemberList(String searchId) {
 		Connection con = null;
@@ -172,7 +173,7 @@ public class MemberDaoImpl implements MemberDao{
 			pstmt = con.prepareStatement(sql);
 			pstmt.setString(1, "%"+searchId+"%");
 			rs = pstmt.executeQuery();
-			if (rs.next()) {
+			while (rs.next()) {
 				Map<String, String> hashmap = new HashMap<>();
 				hashmap.put("memId", rs.getString("em_id"));
 				hashmap.put("memName", rs.getString("em_name"));
@@ -274,7 +275,7 @@ public class MemberDaoImpl implements MemberDao{
 	public int updateMemberInfo(Map<String, String> memberInfo) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
-		String sql = "UPDATE employee SET em_pw=?, em_name=?, em_mobile=?, em_work=?, em_state=?, em_update=to_char(systimestamp,'yyyy-mm-dd'), em_auid=?, em_entry_date=? WHERE em_id=?";
+		String sql = "UPDATE employee SET em_pw=?, em_name=?, em_mobile=?, em_work=?, em_state=?, em_update=to_char(systimestamp,'yyyy-mm-dd'), au_id=?, em_entry_date=? WHERE em_id=?";
 		try {
 			con = factory.getConnection();
 			pstmt = con.prepareStatement(sql);
@@ -349,5 +350,4 @@ public class MemberDaoImpl implements MemberDao{
 		}
 		return 0;
 	}
-	
 }

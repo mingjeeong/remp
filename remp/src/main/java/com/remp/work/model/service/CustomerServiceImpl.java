@@ -96,13 +96,43 @@ public class CustomerServiceImpl implements CustomerService{
 	/* ======================================== by 이민정 ================================================= */
 	@Override
 	public Boolean setPassword(String id, String pw, String newPw) {
-		return null;
-		//return customerDao.updatePassword(id, pw, newPw);
+		//return null;
+		return customerDao.updatePassword(id, pw, newPw);
 	}
 	
 	/* ======================================== by 김재림 ================================================= */
 	@Override
 	public String getCustomerId(HashMap<String, String> memberinfo) {
 		return customerDao.selectCustomerId(memberinfo);
+	}
+
+	@Override
+	public int setNewPassword(Map<String, String> jsonToMap) {
+		return customerDao.UpdateUserPassword(jsonToMap);
+	}
+
+	@Override
+	public int setNewMobile(Map<String, String> jsonToMap) {
+		return customerDao.UpdateUserMobile(jsonToMap);
+	}
+
+	@Override
+	public int setNewAddress(Map<String, String> jsonToMap) {
+		return customerDao.UpdateUserAddress(jsonToMap);
+	}
+	
+	@Override
+	public int setNewCard(Map<String, String> jsonToMap) {
+		return customerDao.UpdateUserCard(jsonToMap);
+	}
+	
+	@Override
+	public int setNewAccount(Map<String, String> jsonToMap) {
+		return customerDao.UpdateUserAccount(jsonToMap);
+	}
+
+	@Override
+	public Map<String, String> getUserInfo(String id) {
+		return customerDao.selectUserInfo(id);
 	}
 }

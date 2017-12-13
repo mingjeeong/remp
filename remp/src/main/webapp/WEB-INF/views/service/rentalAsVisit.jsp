@@ -1,6 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
-<%@ page session="false"%>
 
 <div style="clear: both; margin-left:5%; width: 90%">
    <ul class="nav nav-tabs" id="rentalAsTab">
@@ -113,7 +112,7 @@
 					<label>AS ID</label> 
 				</td>
 				<td>
-					<input type="text" id="hi_outId" name="hi_outId" class="form-control"  readonly>
+					<input type="text" id="hi_outId" name="hi_outId" class="form-control"  readonly style="background-color:lightgray">
 				</td>
 			</tr>
 			<tr>
@@ -121,7 +120,7 @@
 					<label>고객명</label>
 				</td>
 				<td>
-					<input type="text" id="hi_viName" name="hi_viName" class="form-control"  readonly>
+					<input type="text" id="hi_viName" name="hi_viName" class="form-control"  readonly style="background-color:lightgray">
 					<input type="hidden" id="hi_cuId" name="hi_cuId" >
 				</td>
 			</tr>
@@ -138,7 +137,7 @@
 					<label>자산 ID</label>
 				</td>
 				<td>
-					<input type="text" id="hi_prId" name="hi_prId" class="form-control"  readonly>
+					<input type="text" id="hi_prId" name="hi_prId" class="form-control"  readonly style="background-color:lightgray">
 				</td>
 			</tr>
 			<tr>
@@ -146,7 +145,7 @@
 					<label>제품명</label>
 				</td>
 				<td>
-					<input type="text" id="hi_itName" name="hi_itName" class="form-control"  readonly>
+					<input type="text" id="hi_itName" name="hi_itName" class="form-control"  readonly style="background-color:lightgray">
 				</td>
 			</tr>
 			<tr>
@@ -155,8 +154,8 @@
 				</td>
 				<td>
 					<select class="form-control" id="hi_outState" name="hi_outState" style="background-color: white">
-						<option value="영업중">영업중</option>
-						<option value="회수요청">회수요청</option>
+						<option value="do_product">영업중</option>
+						<option value="re_return">회수요청</option>
 					</select>
 				</td>
 			</tr>

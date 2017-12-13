@@ -155,6 +155,161 @@ public class CustomerDaoImpl implements CustomerDao{
 		}
 		return returnValue.toString();
 	}
+
+	public int UpdateUserPassword(Map<String, String> info) {
+		int returnValue = -1;
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		System.out.println(info.get("new_pw"));
+		System.out.println(info.get("id"));
+		System.out.println(info.get("password"));
+		
+		String sql = "update customer set CU_PW = ? where CU_ID = ? and CU_PW = ?";
+		try {
+			con = factory.getConnection();
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, info.get("new_pw"));
+			pstmt.setString(2, info.get("id"));
+			pstmt.setString(3, info.get("password"));
+			returnValue = pstmt.executeUpdate();
+			System.out.println(returnValue);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			factory.close(con, pstmt);
+		}
+		return returnValue;
+	}
+	
+	public int UpdateUserMobile(Map<String, String> info) {
+		int returnValue = -1;
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		String sql = "update customer set CU_MOBILE = ? where CU_ID = ? and CU_PW = ?";
+		try {
+			con = factory.getConnection();
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, info.get("new_mobile"));
+			pstmt.setString(2, info.get("id"));
+			pstmt.setString(3, info.get("password"));
+			returnValue = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			factory.close(con, pstmt);
+		}
+		return returnValue;
+	}
+	
+	public int UpdateUserAddress(Map<String, String> info) {
+		int returnValue = -1;
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		String sql = "update customer set CU_POST = ?, CU_ADDR = ?, CU_ADD_D = ? where CU_ID = ? and CU_PW = ?";
+		try {
+			con = factory.getConnection();
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, info.get("new_post"));
+			pstmt.setString(2, info.get("new_addr"));
+			pstmt.setString(3, info.get("new_addr_d"));
+			pstmt.setString(4, info.get("id"));
+			pstmt.setString(5, info.get("password"));
+			returnValue = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			factory.close(con, pstmt);
+		}
+		return returnValue;
+	}
+	
+	public int UpdateUserCard(Map<String, String> info) {
+		int returnValue = -1;
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		String sql = "update customer set CU_CARD = ?, CU_CCOMPANY = ? where CU_ID = ? and CU_PW = ?";
+		try {
+			con = factory.getConnection();
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, info.get("new_card"));
+			pstmt.setString(2, info.get("new_c_company"));
+			pstmt.setString(3, info.get("id"));
+			pstmt.setString(4, info.get("password"));
+			returnValue = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			factory.close(con, pstmt);
+		}
+		return returnValue;
+	}
+	
+	public int UpdateUserAccount(Map<String, String> info) {
+		int returnValue = -1;
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		String sql = "update customer set CU_CBANK = ?, CU_ACCOUNT = ? where CU_ID = ? and CU_PW = ?";
+		try {
+			con = factory.getConnection();
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, info.get("new_a_company"));
+			pstmt.setString(2, info.get("new_account"));
+			pstmt.setString(3, info.get("id"));
+			pstmt.setString(4, info.get("password"));
+			returnValue = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			factory.close(con, pstmt);
+		}
+		return returnValue;
+	}
+
+	public Map<String, String> selectUserInfo(String id) {
+		Map<String, String> returnValue = new HashMap<>();
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		String sql = "select CU_ID, CU_NAME, CU_BIRTH, CU_MOBILE, CU_POST, CU_ADDR, CU_ADD_D, CU_CCOMPANY, CU_CARD, CU_CBANK, CU_ACCOUNT from customer where CU_ID = ?";
+		try {
+			con = factory.getConnection();
+			pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, id);
+			rs = pstmt.executeQuery();
+			if (rs.next()) {
+				returnValue.put("id", rs.getString("CU_ID"));
+				returnValue.put("name", rs.getString("CU_NAME"));
+				returnValue.put("birth", rs.getString("CU_BIRTH"));
+				returnValue.put("mobile", rs.getString("CU_MOBILE"));
+				returnValue.put("post", rs.getString("CU_POST"));
+				returnValue.put("addr", rs.getString("CU_ADDR"));
+				returnValue.put("addrd", rs.getString("CU_ADD_D"));
+				returnValue.put("cCompany", rs.getString("CU_CCOMPANY"));
+				String[] card = (rs.getString("CU_CARD") != null)? rs.getString("CU_CARD").split("-") : null;
+				if (card != null) {
+					if (card.length == 1) {
+						returnValue.put("card1", card[0].substring(0, 4));
+						returnValue.put("card2", card[0].substring(4, 8));
+						returnValue.put("card3", card[0].substring(8, 12));
+						returnValue.put("card4", card[0].substring(12, 16));
+					} else {
+						returnValue.put("card1", card[0]);
+						returnValue.put("card2", card[1]);
+						returnValue.put("card3", card[2]);
+						returnValue.put("card4", card[3]);
+					}
+				}
+				returnValue.put("aCompany", rs.getString("CU_CBANK"));
+				returnValue.put("account", rs.getString("CU_ACCOUNT"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			factory.close(con, pstmt, rs);
+		}
+		return returnValue;
+	}
+
 	
 	/* ======================================== by 이원호 ================================================= */
 	@Override
@@ -270,8 +425,8 @@ public class CustomerDaoImpl implements CustomerDao{
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		String sql = "SELECT * FROM customer WHERE cu_id=?";
+		Map<String, String> hashmap = new HashMap<>();
 		try {
-			Map<String, String> hashmap = new HashMap<>();
 			con = factory.getConnection();
 			pstmt = con.prepareStatement(sql);
 			pstmt.setString(1, customerId);
@@ -299,7 +454,7 @@ public class CustomerDaoImpl implements CustomerDao{
 		} finally {
 			factory.close(con, pstmt, rs);
 		}
-		return null;
+		return hashmap;
 	}
 
 	//관리자 회원 정보 전체 변경
@@ -442,6 +597,7 @@ public class CustomerDaoImpl implements CustomerDao{
 	}
 	
 	/* ======================================== by 이민정 ================================================= */
+
 	public boolean updatePassword(String id, String pw, String newPw) {
 		Connection con = null;
 		String sql = "update CUSTOMER set CU_PW=? where CU_PW=? and CU_ID=?";

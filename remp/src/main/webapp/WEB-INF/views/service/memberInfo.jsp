@@ -1,6 +1,5 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -17,7 +16,8 @@
 						<label>사번</label>
 					</td>
 					<td>
-						<input type="text" id="tb_id" name="tb_id" title="당신의 사번"  class="form-control " required readonly value="${emp.id}"> <br>
+						<input type="text" id="tb_id" name="tb_id" title="당신의 사번"  class="form-control " style="background-color:lightgray"
+						 readonly value="${emp.id}"> <br>
 					</td>
 					<td>
 					</td>
@@ -28,7 +28,7 @@
 					</td>
 					<td>
 						<input type="text" id="tb_name" name="tb_name" title="한글 및 영대소문자 조합" placeholder="이름"  
-						class="form-control"  required maxlength="20"  readonly value="${emp.name}"> <br>
+						class="form-control"  required maxlength="20"  readonly value="${emp.name}" style="background-color:lightgray"> <br>
 					</td>
 					<td>
 					</td>
@@ -90,7 +90,7 @@
 					</td>
 					<td>
 						<input type="text" id="tb_entryDate" name="tb_entryDate" title="입사한 날짜입니다" placeholder="입사일자"  
-						class="form-control"  maxlength="255"  readonly value="${emp.entryDate}"> <br>
+						class="form-control"  maxlength="255"  readonly value="${emp.entryDate}" style="background-color:lightgray"> <br>
 					</td>
 					<td>
 					</td>
@@ -101,7 +101,7 @@
 					</td>
 					<td>
 						<input type="text" id="tb_update" name="tb_update" title="최근 상태를 변경한 날짜입니다" placeholder="상태변경일"  
-						class="form-control"  maxlength="255"  readonly value="${emp.update}"> <br>
+						class="form-control"  maxlength="255"  readonly value="${emp.update}" style="background-color:lightgray"> <br>
 					</td>
 					<td>
 					</td>

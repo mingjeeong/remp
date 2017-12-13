@@ -1,6 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
-<%@ page session="false" %>
 <div class="item_wrapper">
 	<div class="left-w80">
 		<input id="keyword" type="text" class="form-control" onkeyup>

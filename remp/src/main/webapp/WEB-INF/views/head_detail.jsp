@@ -34,11 +34,5 @@
 	<div class="content_wrapper">
 		<jsp:include page="/WEB-INF/views/structure/footer.jsp" />
 	</div>
-	
-	<script>
-		sessionStorage.setItem('userId','${sessionScope.userId}');
-		sessionStorage.setItem('userName','${sessionScope.userName}');
-		sessionStorage.setItem('userGrade','${sessionScope.userGrade}');
-	</script>
 </body>
 </html>

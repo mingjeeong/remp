@@ -57,7 +57,6 @@ public class RentalServiceImpl implements RentalService {
 	}
 
 	/* ======================================== by 이원호 ================================================= */
-	/* 방문 검색 리스트 조회 */
 	@Override
 	public List<Map<String, String>> getVisitSearchList(String state, String select, String search) {
 		return rentalDao.selectVisitSearchList(state, select, search);
@@ -109,7 +108,10 @@ public class RentalServiceImpl implements RentalService {
 			if (assetDao.updateBuyEnd(buyId, depriveDto.getDay()) == 1) {
 				if (assetDao.updateState(depriveDto.getState(), buyId) == 1) {
 					if (assetDao.updateViComplete(depriveDto.getViId()) == 1) {
-						return true;
+						if (rentalDao.insertRefundInput(depriveDto) == 1) {
+							System.out.println("입고 등록 완료");
+							return true;
+						}
 					}
 				}
 			}
@@ -169,6 +171,7 @@ public class RentalServiceImpl implements RentalService {
 	}
 	
 	/* ======================================== by 이민정 ================================================= */
+
 	public ArrayList<Item> getItemList(){
 		return itemDao.getItemList();
 	}

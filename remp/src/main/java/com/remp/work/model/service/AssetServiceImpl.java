@@ -50,12 +50,13 @@ public class AssetServiceImpl implements AssetService {
 		int result = assetDao.updateState(state, buyId);
 		return result;
 	}
-
-	@Override
-	public HashMap<String, String> getFixInfo() {
-		return null;
-	}
 	
+	@Override
+	public int setInState(Map<String, String> map) {
+		int result = assetDao.updateInState(map);
+		return result;
+	}
+
 	@Override
 	public Map<String, String> getVisitInfo(String visitId) {
 		Map<String, String> map = assetDao.selectVisitInfo(visitId);
@@ -65,9 +66,84 @@ public class AssetServiceImpl implements AssetService {
 	@Override
 	public List<Map<String, String>> getProduct(String keyword) {
 		List<Map<String, String>> list = new ArrayList<>();
+		String kName = "";
 		list = assetDao.selectProduct(keyword);
-		if(list.isEmpty()) {
-			list = null;
+		for(int i=0; i<list.size(); i++) {
+			String state = list.get(i).get("prState");
+			switch(state) {
+				case "re_ninput" :
+					kName = "신규입고요청";
+					list.get(i).put("prState", kName);
+					break;
+				case "re_npart" :
+					kName = "신규수리부속요청";
+					list.get(i).put("prState", kName);
+					break;
+				case "re_nother" :
+					kName = "신규기타자산입고요청";
+					list.get(i).put("prState", kName);
+					break;
+				case "re_exinput" :
+					kName = "외부수리입고요청";
+					list.get(i).put("prState", kName);
+					break;
+				case "re_output" :
+					kName = "렌탈출고요청";
+					list.get(i).put("prState", kName);
+					break;
+				case "re_exoutput" :
+					kName = "외부수리출고요청";
+					list.get(i).put("prState", kName);
+					break;
+				case "re_reinput" :
+					kName = "회수입고요청";
+					list.get(i).put("prState", kName);
+					break;
+				case "re_disuse" :
+					kName = "폐기요청";
+					list.get(i).put("prState", kName);
+					break;
+				case "re_repair" :
+					kName = "수리요청";
+					list.get(i).put("prState", kName);
+					break;
+				case "re_return" :
+					kName = "회수요청";
+					list.get(i).put("prState", kName);
+					break;
+				case "wa_ninput" :
+					kName = "등록대기";
+					list.get(i).put("prState", kName);
+					break;
+				case "wa_policy" :
+					kName = "정책대기";
+					list.get(i).put("prState", kName);
+					break;
+				case "wa_product" :
+					kName = "영업대기";
+					list.get(i).put("prState", kName);
+					break;
+				case "wa_check" :
+					kName = "점검대기";
+					list.get(i).put("prState", kName);
+					break;
+				case "wa_repair" :
+					kName = "수리대기";
+					list.get(i).put("prState", kName);
+					break;
+				case "do_product" :
+					kName = "영업중";
+					list.get(i).put("prState", kName);
+					break;
+				case "do_disuse" :
+					kName = "폐기";
+					list.get(i).put("prState", kName);
+					break;
+				default :
+					kName = "신규입고요청";
+					list.get(i).put("prState", kName);
+					break;
+			}
 		}
 		return list;
 	}
@@ -102,7 +178,7 @@ public class AssetServiceImpl implements AssetService {
 	}
 	
 	@Override
-	public String setProductUpdate(Map<String, String>map) {		// 매개변수 값 바꾸어주기
+	public String setProductUpdate(Map<String, String>map) {
 		int prResult = assetDao.updateProductUpdate(map);
 		String result = null;
 		if(prResult == 1) {
@@ -131,8 +207,7 @@ public class AssetServiceImpl implements AssetService {
 	public Map<String, String> getProductInsert(String prId) {
 		Map<String, String> map = new HashMap<>();
 		Map<String, String> prMap = assetDao.selectProductInsertPr(prId);
-		Map<String, String> itMap = assetDao.selectProductInsertIt(prMap.get("itId"));
-		if(!prMap.isEmpty() && prMap != null) {	
+		if(!prMap.isEmpty() && prMap != null) {
 			map.put("prId", prMap.get("prId"));
 			map.put("prFirstDay", prMap.get("prFirstDay"));
 			map.put("prInDay", prMap.get("prInDay"));
@@ -143,14 +218,17 @@ public class AssetServiceImpl implements AssetService {
 			map.put("prCount", prMap.get("prCount"));
 			map.put("prQr", prMap.get("prQr"));
 			map.put("itId", prMap.get("itId"));
-			map.put("itName", itMap.get("itName"));
-			map.put("itCode", itMap.get("itCode"));
-			map.put("itPrice", itMap.get("itPrice"));
-			map.put("itAcquisition", itMap.get("itAcquisition"));
-			map.put("itPeriod", itMap.get("itPeriod"));
-			map.put("itManufacturer", itMap.get("itManufacturer"));
-			map.put("itContent", itMap.get("itContent"));
-			map.put("itImage", itMap.get("itImage"));
+			if(prMap.get("itId") != null && !prMap.get("itId").isEmpty()){
+				Map<String, String> itMap = assetDao.selectProductInsertIt(prMap.get("itId"));
+				map.put("itName", itMap.get("itName"));
+				map.put("itCode", itMap.get("itCode"));
+				map.put("itPrice", itMap.get("itPrice"));
+				map.put("itAcquisition", itMap.get("itAcquisition"));
+				map.put("itPeriod", itMap.get("itPeriod"));
+				map.put("itManufacturer", itMap.get("itManufacturer"));
+				map.put("itContent", itMap.get("itContent"));
+				map.put("itImage", itMap.get("itImage"));
+			}
 		}
 		return map;
 	}
@@ -158,10 +236,12 @@ public class AssetServiceImpl implements AssetService {
 	@Override
 	public String setProductInsert(Map<String, String> map) {
 		int setProduct = assetDao.updateProductInsertPr(map);
-		int setItem = assetDao.insertProductInsertIt(map);
-		int setInput = assetDao.updateInput(map);
+		int setItem = assetDao.updateProductInsertIt(map);
+//		int setInput = assetDao.updateInput(map);
+		System.out.println(setProduct + "/" + setItem); // 자산갱신 및 품목갱신
+		
 		String result = null;
-		if(setProduct ==1 && setItem == 1 && setInput ==1) {
+		if(setProduct ==1 && setItem == 1) {
 			result = "1";
 		}
 		return result;
@@ -169,19 +249,17 @@ public class AssetServiceImpl implements AssetService {
 	
 	/* ======================================== by 김재림 ================================================= */
 	@Override
-	public int setAssetRentalOut(String assetId) {
-		return assetDao.updateAssetState("re_output", assetId);
+	public int setAssetRentalOut(Map<String, String> info) {
+		return assetDao.updateAssetRentalOut(info);
 	}
 
 	@Override
 	public List<Map<String, String>> getAssetList(String itemId) {
-		return assetDao.selectAssetList("do_product", itemId);
+		return assetDao.selectAssetList("wa_product", itemId);
 	}
 
 	@Override
 	public List<Map<String, String>> getRentalRequestList(String keyword) {
-		//렌탈요청 미완료건 조회
-		System.out.println("자산상태값 추가 필요");
 		return buyDao.selectRentalRequestList(keyword);
 	}
 
@@ -208,6 +286,11 @@ public class AssetServiceImpl implements AssetService {
 	@Override
 	public int newDueDiligencePlan(Map<String, String> jsonToMap) {
 		return examinationDao.insertDueDiligencePlan(jsonToMap);
+	}
+
+	@Override
+	public int setUnstore(Map<String, String> jsonToMap) {
+		return assetDao.updateUnstore(jsonToMap);
 	}
 
 	
@@ -357,5 +440,4 @@ public class AssetServiceImpl implements AssetService {
 	public Map<String, String> getProductCount(String itId, String itName) {
 		return assetDao.selectCount(itId, itName);
 	}
-	
 }

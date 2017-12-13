@@ -8,7 +8,6 @@ import com.remp.work.model.dto.Deprive;
 
 public interface RentalDao {
 	/* ======================================== by 이동훈 ================================================= */
-	public int insertNomalAdvice(Advice adviceDto);
 	public int insertVisit(Map<String, String> map);	// 회수상담 등록 시 방문테이블 삽입
 	
 	/* ======================================== by 이원호 ================================================= */
@@ -23,4 +22,6 @@ public interface RentalDao {
 	public int insertOutput(Map<String, String> adviceInfo);
 	public int insertAdvice(Map<String, String> map);
 	public String selectBuyId();
+	
+	public int insertRefundInput(Deprive depriveDto);
 }

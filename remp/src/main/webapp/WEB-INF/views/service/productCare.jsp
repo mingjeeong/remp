@@ -1,6 +1,5 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 <!-- detail -->
 <div  id="productCare">
 	<div class="item_wrapper" align="center">
@@ -13,7 +12,7 @@
 		</div>	
 	</div>
 	<div style="width: 100%; height: 80%; overflow: scroll;" id="spanDiv">
-		<table id="productRequestResult" class="table table-striped table-hover table-bordered table-sm">
+		<table id="productRequestResult" class="table table-striped table-hover table-bordered table-sm is-line">
 			<thead class="thead-dark">
 				<tr>
 					<th>자산ID</th>
@@ -27,7 +26,6 @@
 					<th>현재위치</th>
 					<th>자산상태</th>
 					<th>수량</th>
-					<th>요구사항</th>
 					<th>QR코드</th>
 					<th>인쇄</th>
 					<th>수정</th>
@@ -49,7 +47,7 @@
 	</div>
 		<form id="uploadImageForm" name="uploadImageForm" action="fileUploadUp.do" enctype="multipart/form-data" method = "post">
 		<div style="float:left; ; width:45%; margin-top: 5%;" align="center">
-			<img id="img_itImage" name="img_itImage" style="width:350; height:280;">
+			<!-- <img id="img_itImage" name="img_itImage" style="width:350; height:280;"> -->
 			<input type="file" id="tb_file" name="tb_file"  class="form-control-file" aria-describedby="fileHelp" disabled>
 	        <small id="fileHelp" class="form-text text-muted">
 	        	등록하실 사진파일을 선택하여 주세요.<br>
@@ -61,13 +59,13 @@
 		</form>
 		<div style="width: 55%; height: 85%; overflow: scroll; float:left;" align="center">
 		<form id="updateProductForm" name="updateProductForm" >
-			<table style="width:80%;" align="center" >
+			<table class="is-line" style="width:80%;" align="center" >
 				<tr>
 					<td style="width:150px">
 						자산ID
 					</td>
 					<td>
-						<input type="text" id="tb_prId" name="tb_prId"  class="prUpdate form-control"  readonly>
+						<input type="text" id="tb_prId" name="tb_prId"  class="prUpdate form-control"  readonly style="background-color:lightgray">
 					</td>
 				</tr>
 				<tr>
@@ -75,7 +73,7 @@
 						품목명
 					</td>
 					<td>
-						<input type="text" id="tb_itName" name="tb_itName"  class="prUpdate form-control" readonly>
+						<input type="text" id="tb_itName" name="tb_itName"  class="prUpdate form-control" readonly style="background-color:lightgray">
 					</td>
 				</tr>
 				<tr>
@@ -83,7 +81,7 @@
 						품목코드
 					</td>
 					<td>
-						<input type="text" id="tb_itCode" name="tb_itCode"  class="prUpdate form-control" readonly>
+						<input type="text" id="tb_itCode" name="tb_itCode"  class="prUpdate form-control" readonly style="background-color:lightgray">
 					</td>
 				</tr>
 				<tr>
@@ -91,7 +89,7 @@
 						제조사
 					</td>
 					<td>
-						<input type="text" id="tb_itManufacturer" name="tb_itManufacturer"  class="prUpdate form-control"readonly>
+						<input type="text" id="tb_itManufacturer" name="tb_itManufacturer"  class="prUpdate form-control"readonly style="background-color:lightgray">
 					</td>
 				</tr>
 				<tr>
@@ -107,7 +105,7 @@
 						취득가
 					</td>
 					<td>
-						<input type="text" id="tb_itAcquisition" name="tb_itAcquisition"  class="prUpdate form-control" readonly>
+						<input type="text" id="tb_itAcquisition" name="tb_itAcquisition"  class="prUpdate form-control" readonly style="background-color:lightgray">
 						<label>원</label>
 					</td>
 				</tr>
@@ -116,7 +114,7 @@
 						단가(월간)
 					</td>
 					<td>
-						<input type="number" id="tb_itPrice" name="tb_itPrice"  class="prUpdate form-control" readonly>
+						<input type="number" id="tb_itPrice" name="tb_itPrice"  class="prUpdate form-control" readonly style="background-color:lightgray">
 						<label>원</label>
 					</td>
 				</tr>
@@ -126,6 +124,7 @@
 					</td>
 					<td>
 						<select id="sb_prState" name="sb_prState"  class="prUpdate form-control">
+							<option value="none">상태를 선택하세요</option>
 							<option value="re_ninput">신규입고요청</option>
 							<option value="re_npart">신규수리부속요청</option>
 							<option value="re_nother">신규기타자산입고요청</option>
@@ -143,8 +142,6 @@
 							<option value="wa_repair">수리대기</option>
 							<option value="do_product">영업중</option>
 							<option value="do_disuse">폐기</option>
-							<option value="As">A/S요청</option>
-							<option value="Refund">회수요청</option>
 						</select>
 					</td>
 				</tr>
@@ -177,7 +174,7 @@
 						기본대여기간
 					</td>
 					<td>
-						<input type="text" id="tb_itPeriod" name="tb_itPeriod"  class="prUpdate form-control"  readonly>
+						<input type="text" id="tb_itPeriod" name="tb_itPeriod"  class="prUpdate form-control"  readonly style="background-color:lightgray">
 						<label>개월</label>
 					</td>
 				</tr>
@@ -194,7 +191,7 @@
 						제품설명
 					</td>
 					<td>
-						<textarea rows="4"  cols="40"  id=ta_itContent name="ta_itContent"  class="prUpdateTa form-control"  readonly></textarea>
+						<textarea rows="4"  cols="40"  id=ta_itContent name="ta_itContent"  class="prUpdateTa form-control"  readonly style="background-color:lightgray"></textarea>
 					</td>
 				</tr>
 				<tr>

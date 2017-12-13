@@ -1,8 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <form name="joinForm" action="join.do" method="post" autocomplete="off">
-<center>
-<table class="tableLoc table-hover" cellpadding="10px">
+<h3 align="center">회원가입</h3>
+<table class="tableLoc table-hover" cellpadding="10px" align="center">
 	<tr>
 		<td width="120px"><label>아이디</label></td>
 		<td colspan="2">
@@ -125,5 +125,4 @@
 		</td>
 	</tr>
 </table>
-</center>
 </form>

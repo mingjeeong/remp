@@ -41,7 +41,20 @@ public interface CustomerDao {
 	
 	/* ======================================== by 김재림 ================================================= */
 	public String selectCustomerId(HashMap<String, String> memberinfo);
+	public Map<String, String> selectUserInfo(String id) ;
+	public int UpdateUserAccount(Map<String, String> info) ;
+	public int UpdateUserCard(Map<String, String> info) ;
+	public int UpdateUserAddress(Map<String, String> info) ;
+	public int UpdateUserMobile(Map<String, String> info) ;
+	public int UpdateUserPassword(Map<String, String> info) ;
 
 	/* ======================================== by 이민정 ================================================= */
+	/**
+	 * 고객 비밀번호 변경
+	 * @param id 고객아이디
+	 * @param pw 현재비밀번호
+	 * @param newPw 변경할 새 비밀번호
+	 * @return
+	 */
 	public boolean updatePassword(String id, String pw, String newPw);
 }

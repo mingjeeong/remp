@@ -1,7 +1,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
-<%@ page session="false" %>
+<h3 align="center">직원 정보 변경</h3>
 <form id="conpainInfoForm" name="conpainInfoForm" method="post" action="setMemberChange.do">
 <table class="table table-striped" style="margin-top:30px">
 	<tr id="tr_memId">

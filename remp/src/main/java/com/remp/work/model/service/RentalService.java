@@ -21,7 +21,24 @@ public interface RentalService {
 	public int addRentalAdvice(Map<String, String> rentalInfo);
 	
 	/* ======================================== by 이민정 ================================================= */
+	/**
+	 * 고객렌탈 메인 화면 품목리스트 보여주기
+	 * @return 고객렌탈 메인 화면 품목리스트
+	 */
 	public ArrayList<Item> getItemList();
+	
+	/**
+	 * 제품 검색
+	 * @param sb_search 검색카테고리
+	 * @param item 검색어
+	 * @return 제품검색 결과 리스트
+	 */
 	public ArrayList<Item> getSearchList(String sb_search, String item);
+	
+	/**
+	 * 렌탈 제품 상세보기
+	 * @param itemId 품목아이디
+	 * @return 품목dto
+	 */
 	public Item getItem(String itemId);
 }

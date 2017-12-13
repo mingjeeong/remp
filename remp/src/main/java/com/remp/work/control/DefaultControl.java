@@ -50,6 +50,7 @@ import com.remp.work.model.service.CustomerService;
 import com.remp.work.model.service.MemberService;
 import com.remp.work.model.service.RentalService;
 import com.remp.work.model.service.SMTPAuthenticatior;
+import com.remp.work.model.service.SmsService;
 import com.remp.work.util.RempUtility;
 
 @Controller
@@ -78,9 +79,10 @@ public class DefaultControl extends ControllerAdapter {
 
 	@Override
 	public ModelAndView home() {
-		return getHeadDetailPage("head.jsp", "detail.jsp");
+		return getPlainPage("gistMain.jsp");
 	}
 	
+	/* ============================================== by 이동훈 ============================================ */
 	/* 비밀번호 찾기로 이동하는 메소드 */
 	@RequestMapping("goFindPw.do")
 	public ModelAndView goSelectPw() {
@@ -113,14 +115,6 @@ public class DefaultControl extends ControllerAdapter {
 		String from = "leedh93@hanmail.net";
 		String result = customerService.getPw(tb_id, tb_name, tb_birth, tb_mobile);
 		if(result != null) {
-//			String tmp[] = new String[] {"A", "1", "C", "2", "E", "3", "G", "4", "I", "5", "K", "!", "M", "@", "O", "#", "Q", "$", "S", "%", "X", "V"};
-//			String tmp2[] = new String[] {"B", "D", "F", "H", "J", "6", "7", "8", "9", "0", "L", "N", "P", "R", "T", "^", "&", "*", "W", "U", "Y", "Z"};
-//			Random random = new Random();
-//			for(int i=0; i<5; i++) {
-//				int su =  random.nextInt(22);
-//				tmpPw += tmp[su];
-//				tmpPw += tmp2[su];
-//			}
 			String possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
 		    for( int i=0; i < 8; i++ ) {
 		    	tmpPw += possible.charAt((int) Math.floor(Math.random() * possible.length()));
@@ -130,8 +124,7 @@ public class DefaultControl extends ControllerAdapter {
 			mav.addObject("to", result);
 			mav.addObject("from", from);
 		}else {
-			mav.addObject("error", "비밀번호 찾기");
-			return getErrorPlainPage(mav, "error.jsp"); // 에러페이지는 좀 더 수정이 필요
+			return getErrorPlainPage(mav, "requestError.jsp");
 		}
 		return getPlainRedPage(mav, "tmpPw.jsp");
 	}
@@ -140,15 +133,13 @@ public class DefaultControl extends ControllerAdapter {
 	@RequestMapping("goSetMemberInfo.do")
 	public ModelAndView getMemberInfo(String id, HttpSession session) { // 세션처리에 따라서 id를 매개변수로 받을지 말지 결정
 		ModelAndView mav = new ModelAndView();
-//		id = (String)session.getAttribute("id");  //로그인 시 해당 아이디를 세션에 저장
-		id = "20171122";	// 현재는 로그인이 없으므로 테스트용 id
+		id = (String)session.getAttribute("loginId");  //로그인 시 해당 아이디를 세션에 저장
 		Employee emp = new Employee();
 		emp = memberService.getMemberInfoSub(id);
 		if(emp != null) {
 			mav.addObject("emp", emp);	
 		}else {
-			mav.addObject("error", "내부사용자 정보조회");
-			return getErrorPlainPage(mav, "error.jsp"); // 에러페이지는 좀 더 수정이 필요
+			return getErrorPlainPage(mav, "requestError.jsp");
 		}
 		return getPlainPage(mav, "memberInfo.jsp");
 	}
@@ -179,10 +170,8 @@ public class DefaultControl extends ControllerAdapter {
 	public @ResponseBody String addFixInfo(@RequestBody String jsonObjectString, HttpSession session) {
 		String total = null;
 		Map<String, String> map = jsonToMap(jsonObjectString);
-//		String engineerId = (String)session.getAttribute("id");
-//		String engineerName = (String)session.getAttribute("name"); // 수리기사 아이디 및 이름
-		String engineerId = "213123123";
-		String engineerName = "킬동이";
+		String engineerId = (String)session.getAttribute("loginId");
+		String engineerName = (String)session.getAttribute("loginName"); // 수리기사 아이디 및 이름
 		String viDay = "";
 		if (map.get("tb_viDay") != null && map.get("tb_viDay").trim().length() > 0) {
 			viDay = map.get("tb_viDay").trim().substring(0,10) + map.get("tb_viDay").trim().substring(11, 16);
@@ -202,7 +191,15 @@ public class DefaultControl extends ControllerAdapter {
 			int update = setPrState(map.get("hi_outState"), map.get("hi_buyId"));
 			if(update !=0) {
 				System.out.println("자산테이블 갱신성공");
-				total = "success";
+				if(map.get("hi_outState").equals("re_return")) {
+					int inUpdate = setInState(map);
+					if(inUpdate !=0) {
+						System.out.println("입고테이블 갱신성공");
+					}else {
+						System.out.println("입고테이블 갱신실패");
+					}
+					total = "success";
+				}
 			} else {
 				System.out.println("자산테이블 갱신오류");
 			}
@@ -215,6 +212,12 @@ public class DefaultControl extends ControllerAdapter {
 	/* as상태 갱신 시 자산테이블 상태 갱신하는 메소드 */
 	public int setPrState(String state, String prId) {
 		int result = assetService.setState(state, prId);
+		return result;
+	}
+	
+	/* as상태 갱신 시 입고테이블 갱신하는 메소드 */
+	public int setInState(Map<String, String> map) {
+		int result = assetService.setInState(map);
 		return result;
 	}
 	
@@ -294,6 +297,9 @@ public class DefaultControl extends ControllerAdapter {
 	@RequestMapping(value="setProductInsert.do", method=RequestMethod.POST)
 	public @ResponseBody String setProductInsert(@RequestBody String jsonObjectString) {
     	Map<String, String> map = jsonToMap(jsonObjectString);
+    	
+    	System.out.println("자산등록 맵 : " + map);
+    	
     	String prFirstDay = "";
 		if (map.get("tb_prFirstDay") != null && map.get("tb_prFirstDay").trim().length() > 0) {
 			prFirstDay = map.get("tb_prFirstDay").trim().substring(0,10) + map.get("tb_prFirstDay").trim().substring(11, 16);
@@ -321,6 +327,9 @@ public class DefaultControl extends ControllerAdapter {
 	   /* 상담 자산정보 가져오기 */
     @RequestMapping(value="getItemInfo.do", method=RequestMethod.POST)
 	 public @ResponseBody List<Map<String, String>> getItemInfo(@RequestBody String jsonObjectString) {
+    	
+    	System.out.println("상담 자산정보 가져오기 memberId : " + jsonToMap(jsonObjectString).get("memberId"));
+    	
 	     return customerService.getItemInfo(jsonToMap(jsonObjectString).get("memberId"));  // Dao에서 리스트 가져오기
 	 }
 	   
@@ -328,12 +337,16 @@ public class DefaultControl extends ControllerAdapter {
     @RequestMapping(value="setAsAdvice.do", method=RequestMethod.POST)
 	 public @ResponseBody String setAsAdvice(@RequestBody String jsonObjectString, HttpSession session) {
     	Map<String, String> map = jsonToMap(jsonObjectString);
-    	String empId = (String) session.getAttribute("id");
+    	String empId = (String) session.getAttribute("loginId");
     	String date = map.get("tb_reDay").trim().substring(0,10) + map.get("tb_reDay").trim().substring(12);
     	map.put("tb_reDay", date);
     	map.put("emId", empId);
         map.put("adSort", "c");
-	     return rentalService.setAdvice(map);
+        if(map.get("tb_cuResult").equals("비회원입니다.")) {
+        	return null;
+        } else {
+        	return rentalService.setAdvice(map);
+        }
 	 }
 	   
 	   /* 회수상담 등록하기 */
@@ -345,12 +358,17 @@ public class DefaultControl extends ControllerAdapter {
     	map.put("tb_reDay", date);
     	map.put("emId", empId);
     	map.put("adSort", "d");
+	   if(map.get("tb_cuResult").equals("비회원입니다.")) {
+           	return null;
+       } else {
 	    return rentalService.setAdvice(map);
+       }
 	 }
 	   
+	   /* 이미지 업로드 */
 	   @RequestMapping(value="fileUpload.do", method=RequestMethod.POST)
 	   public @ResponseBody String fileUpload(MultipartHttpServletRequest request, MultipartFile uploadFile, Object obj){
-	      String path = "";
+		  String path = "";
 	      String fileName = "";
 	      String prId = request.getParameter("fi_prId");
 	       OutputStream out = null;
@@ -387,7 +405,10 @@ public class DefaultControl extends ControllerAdapter {
 	   }
 	   
 	   private String getSaveLocation(MultipartHttpServletRequest request, Object obj) {
-	       String uploadPath = "I:\\Donghun\\Skill\\java\\workspace_FinalProject\\remp\\src\\main\\webapp\\resources\\images\\";
+		   String root_path = request.getSession().getServletContext().getRealPath("/");  
+	       String attach_path = "resources/images/";
+//	       String uploadPath = "I:\\Donghun\\Skill\\java\\workspace_FinalProject\\remp\\src\\main\\webapp\\resources\\images\\";
+	       String uploadPath = root_path + attach_path;
 	        System.out.println("UtilFile getSaveLocation path : " + uploadPath);
 	        return uploadPath;
 	    }
@@ -407,17 +428,12 @@ public class DefaultControl extends ControllerAdapter {
 		}
 		
 		@RequestMapping("gouserchange.do")
-		public ModelAndView goUserChange() {
-			
-			
-			return getPlainRedPage("user_change.jsp");
-		}
-
-		@RequestMapping("gologin.do")
-		public ModelAndView goLogin(String customerId) {
-			ModelAndView returnValue = new ModelAndView();
-			returnValue.addObject("customerId", customerId);
-			return getPlainPage(returnValue, "login.jsp");
+		public ModelAndView goUserChange(HttpSession session) {
+			ModelAndView mav = new ModelAndView();
+			String id = session.getAttribute("loginId").toString();
+			Map<String, String> userinfo = customerService.getUserInfo(id);
+			mav.addObject("userInfo", userinfo);
+			return getPlainRedPage(mav, "user_change.jsp");
 		}
 		
 		@RequestMapping("gorentalasset.do")
@@ -447,7 +463,7 @@ public class DefaultControl extends ControllerAdapter {
 		
 		@RequestMapping(value="rentalassetconfirm.do", method=RequestMethod.POST)
 		public @ResponseBody Map<String, String> rentalAssetConfirm(@RequestBody String jsonObjectString) {
-			int result = assetService.setAssetRentalOut(jsonToMap(jsonObjectString).get("id"));
+			int result = assetService.setAssetRentalOut(jsonToMap(jsonObjectString));
 			Map<String, String> returnValue = isUpdatedToMap(result);
 			returnValue.put("id", jsonToMap(jsonObjectString).get("id"));
 			return returnValue;
@@ -455,8 +471,8 @@ public class DefaultControl extends ControllerAdapter {
 		
 		@RequestMapping(value="setunstore.do", method=RequestMethod.POST)
 		public @ResponseBody Map<String, String> setUnstore(@RequestBody String jsonObjectString) {
-			String id = jsonToMap(jsonObjectString).get("id");
-			Map<String, String> returnValue = isUpdatedToMap(assetService.setAssetRentalOut(id));
+			String id = jsonToMap(jsonObjectString).get("productId");
+			Map<String, String> returnValue = isUpdatedToMap(assetService.setUnstore(jsonToMap(jsonObjectString)));
 			returnValue.put("id", id);
 			return returnValue;
 		}
@@ -501,8 +517,81 @@ public class DefaultControl extends ControllerAdapter {
 		
 		@RequestMapping("getduediligenceplanlist.do")
 		public @ResponseBody List<Map<String, String>> getDueDiligencePlanList(@RequestBody String jsonObjectString) {
-			System.out.println(jsonObjectString);
 			return assetService.getDueDiligencePlanList(jsonToMap(jsonObjectString).get("keyword").replaceAll(" ", "|"));
+		}
+		
+		@RequestMapping(value="setNewPassword.do", method=RequestMethod.POST)
+		public @ResponseBody Map<String, String> setNewPassword(@RequestBody String jsonObjectString, HttpSession session) {
+			Map<String, String> map = jsonToMap(jsonObjectString);
+			System.out.println(session.getAttribute("loginId").toString());
+			map.put("id", session.getAttribute("loginId").toString());
+			String password = map.get("password");
+			String newPass = map.get("new_pw");
+			if (password == null || password.trim().isEmpty() || newPass == null || newPass.trim().isEmpty()) {
+				return isUpdatedToMap(0);
+			}
+			int result = customerService.setNewPassword(map);
+			return isUpdatedToMap(result);
+		}
+		
+		@RequestMapping(value="setNewMobile.do", method=RequestMethod.POST)
+		public @ResponseBody Map<String, String> setNewMobile(@RequestBody String jsonObjectString, HttpSession session) {
+			Map<String, String> map = jsonToMap(jsonObjectString);
+			map.put("id", session.getAttribute("loginId").toString());
+			String password = map.get("password");
+			String mobile = map.get("new_mobile");
+			if (password == null || password.trim().isEmpty() || mobile == null || mobile.trim().isEmpty()) {
+				return isUpdatedToMap(0);
+			}
+			int result = customerService.setNewMobile(map);
+			return isUpdatedToMap(result);
+		}
+		
+		@RequestMapping(value="setNewAddress.do", method=RequestMethod.POST)
+		public @ResponseBody Map<String, String> setNewAddress(@RequestBody String jsonObjectString, HttpSession session) {
+			Map<String, String> map = jsonToMap(jsonObjectString);
+			map.put("id", session.getAttribute("loginId").toString());
+			String password = map.get("password");
+			String post = map.get("new_post");
+			String addr = map.get("new_addr");
+			String addrd = map.get("new_addr_d");
+			if (password == null || password.trim().isEmpty() ||
+					post == null || post.trim().isEmpty() ||
+					addr == null || addr.trim().isEmpty() ||
+					addrd == null || addrd.trim().isEmpty()) {
+				return isUpdatedToMap(0);
+			}
+			int result = customerService.setNewAddress(map);
+			return isUpdatedToMap(result);
+		}
+		
+		@RequestMapping(value="setNewCard.do", method=RequestMethod.POST)
+		public @ResponseBody Map<String, String> setNewCard(@RequestBody String jsonObjectString, HttpSession session) {
+			Map<String, String> map = jsonToMap(jsonObjectString);
+			map.put("id", session.getAttribute("loginId").toString());
+			String password = map.get("password");
+			String company = map.get("new_c_company");
+			String card = map.get("new_card1")+map.get("new_card2")+map.get("new_card3")+map.get("new_card4");
+			if (password == null || password.trim().isEmpty() || company == null || company.trim().isEmpty() || card.trim().length() != 19 || !card.matches("^\\d{4}-\\d{4}-\\d{4}-\\d{4}$")) {
+				return isUpdatedToMap(0);
+			}
+			map.put("new_card", card);
+			int result = customerService.setNewCard(map);
+			return isUpdatedToMap(result);
+		}
+		
+		@RequestMapping(value="setNewAccount.do", method=RequestMethod.POST)
+		public @ResponseBody Map<String, String> setNewAccount(@RequestBody String jsonObjectString, HttpSession session) {
+			Map<String, String> map = jsonToMap(jsonObjectString);
+			map.put("id", session.getAttribute("loginId").toString());
+			String password = map.get("password");
+			String company = map.get("new_a_company");
+			String account = map.get("new_account");
+			if (password == null || password.trim().isEmpty() || company == null || company.trim().isEmpty() || account == null || account.trim().isEmpty()) {
+				return isUpdatedToMap(0);
+			}
+			int result = customerService.setNewAccount(map);
+			return isUpdatedToMap(result);
 		}
 		
 		public Map<String, String> jsonToMap(String jsonObjectString) {
@@ -539,27 +628,30 @@ public class DefaultControl extends ControllerAdapter {
 		}
 	
 	/* ======================================== by 이민정 ================================================= */
-	
 		/**
 		 * 비밀번호 변경
-		 * @param session
-		 * @param presentPw
-		 * @param newPw
-		 * @return
+		 * @param session 세션
+		 * @param presentPw 현재 비밀번호
+		 * @param newPw 새 비밀번호
+		 * @return 성공시 메인화면으로 이동
 		 */
 		@RequestMapping("changepw.do")
 		public ModelAndView setPassword(HttpSession session, String presentPw, String newPw) {
 			ModelAndView mv = new ModelAndView();
-			String id = (String) session.getAttribute("id");
+			String id = (String) session.getAttribute("loginId");
 			boolean result = customerService.setPassword(id, presentPw, newPw);
 			if(result) {
-				mv.setViewName("home");//
+				return getPlainPage("gistMain.jsp");
+			}else {
+				//일치 하지 않는 정보 입니다 알림
 			}
 			return mv;
 		}
 		
+
 		/**
 		 * 비밀번호 변경 페이지로 가기
+		 * @return 비밀번호 변경 페이지
 		 */
 		@RequestMapping("gochangepw.do")
 		public ModelAndView goSetPassword() {
@@ -568,16 +660,7 @@ public class DefaultControl extends ControllerAdapter {
 		
 		/**
 		 * 렌탈 메인 페이지로 가기
-		 * @return
-		 */
-		@RequestMapping("gorentalmain.do")
-		public ModelAndView goRentalMain() {
-			return getPlainRedPage("rentalmain.jsp");
-		}
-		
-		/**
-		 * 렌탈 메인
-		 * @return
+		 * @return 렌탈 메인 페이지
 		 */
 		@RequestMapping("rentalmain.do")
 		public ModelAndView rentalMain() {
@@ -591,9 +674,9 @@ public class DefaultControl extends ControllerAdapter {
 		
 		/**
 		 * 렌탈 제품 검색하기
-		 * @param sb_search
-		 * @param item
-		 * @return
+		 * @param sb_search 셀렉트 박스의 검색 카테고리
+		 * @param item 검색어
+		 * @return 검색 내역 출력
 		 */
 		@RequestMapping("searchitem.do")
 		public ModelAndView getSearchList(String sb_search, String item) {
@@ -617,20 +700,11 @@ public class DefaultControl extends ControllerAdapter {
 			return mv;
 		}
 		
-		/**
-		 * 렌탈 제품 상세보기로 가기
-		 * @return
-		 */
-		@RequestMapping("gorentaldetail.do")
-		public ModelAndView goRentalDetail() {
-			return getPlainRedPage("rentaldetail.jsp");
-			
-		}
 		
 		/**
-		 *  렌탈 제품 상세보기
-		 * @param id
-		 * @return
+		 * 렌탈 상세보기 페이지로 가기
+		 * @param itemId 품목 아이디
+		 * @return 렌탈 상세보기 페이지
 		 */
 		@RequestMapping("rentaldetail.do")
 		public ModelAndView rentalDetail(@RequestParam String itemId) {
@@ -645,9 +719,9 @@ public class DefaultControl extends ControllerAdapter {
 		}
 		
 		/**
-		 * 렌탈 하기
-		 * @param itemId
-		 * @return
+		 * 렌탈 구매하기
+		 * @param itemId 품목아이디
+		 * @return 렌탈 구매 페이지
 		 */
 		@RequestMapping("rental.do")
 		public ModelAndView rental(@RequestParam String itemId) {
@@ -661,10 +735,9 @@ public class DefaultControl extends ControllerAdapter {
 			return mv;
 		}
 		
-		
 		/**
-		 * 요청자산 조회로 이동
-		 * @return
+		 * 입고 요청자산 조회로 이동
+		 * @return 입고요청 자산 조회 페이지
 		 */
 		@RequestMapping("goinputrequest.do")
 		public ModelAndView goInputRequest() {
@@ -672,9 +745,9 @@ public class DefaultControl extends ControllerAdapter {
 		}
 		
 		/**
-		 * 요청자산 조회
-		 * @param jsonObjectString
-		 * @return
+		 * 입고 요청자산 조회
+		 * @param jsonObjectString 입고 요청자산 상태 (inputState)
+		 * @return 입고 요청자산 상태에 맞는 입고 요청 자산 리스트
 		 */
 		@RequestMapping(value="getinputrequest.do", method=RequestMethod.POST)
 		public @ResponseBody List<Map<String, String>> getInputRequeat(@RequestBody String jsonObjectString) {
@@ -682,9 +755,9 @@ public class DefaultControl extends ControllerAdapter {
 		}
 		
 		/**
-		 * 요청자산 등록
-		 * @param jsonObjectString
-		 * @return
+		 * 입고요청자산 입고 등록
+		 * @param jsonObjectString 입고아이디(id), 입고자산상태(state)
+		 * @return 입고등록 성공,실패시 메시지 map
 		 */
 		@RequestMapping(value="setinputstate.do", method=RequestMethod.POST)
 		public  @ResponseBody Map<String, String> setInputState(@RequestBody String jsonObjectString) {
@@ -701,8 +774,8 @@ public class DefaultControl extends ControllerAdapter {
 		
 		/**
 		 * 요청자산 검색 조회
-		 * @param jsonObjectString
-		 * @return
+		 * @param jsonObjectString 요청자산 상태(state), 검색어(name)
+		 * @return 요청자산 상태,검색어에 맞는 검색결과 리스트
 		 */
 		@RequestMapping(value="searchinputrequest.do", method=RequestMethod.POST) 
 		public @ResponseBody List<Map<String, String>> searchInputRequest(@RequestBody String jsonObjectString) {
@@ -710,8 +783,8 @@ public class DefaultControl extends ControllerAdapter {
 		}
 		
 		/**
-		 * 입고조회로 이동
-		 * @return
+		 * 입고 조회로 이동
+		 * @return 입고 조회 페이지
 		 */
 		@RequestMapping("goinput.do")
 		public ModelAndView goInput() {
@@ -720,8 +793,8 @@ public class DefaultControl extends ControllerAdapter {
 		
 		/**
 		 * 입고조회
-		 * @param jsonObjectString
-		 * @return
+		 * @param jsonObjectString 입고자산상태(state)
+		 * @return 입고 자산상태를 조회한 입고 리스트
 		 */
 		@RequestMapping("getinput.do") 
 		public @ResponseBody List<Map<String, String>> getInput(@RequestBody String jsonObjectString) {
@@ -732,24 +805,25 @@ public class DefaultControl extends ControllerAdapter {
 		}
 		
 		/**
-		 * 입고조회
-		 * @param jsonObjectString
-		 * @return
+		 * 입고조회 검색
+		 * @param jsonObjectString 입고상태(state),검색어(name)
+		 * @return 입고자산 검색 후 결과 리스트
 		 */
 		@RequestMapping(value="searchinput.do", method=RequestMethod.POST) 
 		public @ResponseBody List<Map<String, String>> searchInput(@RequestBody String jsonObjectString) {
-			System.out.println(jsonObjectString);
 			return assetService.searchInput(jsonToMap(jsonObjectString).get("state"),jsonToMap(jsonObjectString).get("name").trim());
 		}
-		
+
 		/**
 		 * 내부수리기사 점검등록 페이지로 이동
-		 * @return
+		 * @param session 세션
+		 * @return 점검대기인 자산과 세션에 저장되어있는 아이디와 이름을 출력한 페이지
 		 */
 		@RequestMapping("gorepairlist.do")
 		public ModelAndView goRepairList(HttpSession session) {
 			ModelAndView mv = getHeadDetailPage("addrepairresulthead.jsp", "addrepairresultdetail.jsp");
 			ArrayList<Product> list = assetService.getRepairList();
+			
 			if(list != null) {
 				mv.addObject("list", list);
 			}
@@ -762,8 +836,8 @@ public class DefaultControl extends ControllerAdapter {
 		
 		/**
 		 * 내부수리기사 점검대기 데이터 검색조회
-		 * @param jsonObjectString
-		 * @return
+		 * @param jsonObjectString 검색어(keyword), 검색카테고리(select)
+		 * @return 점검대기인 상태인 자산을 검색어와 검색카테고리로 검색한 결과 리스트
 		 */
 		@RequestMapping(value="getrepairlist.do", method=RequestMethod.POST)
 		public @ResponseBody List<Map<String, String>> getRepairList(@RequestBody String jsonObjectString) {
@@ -772,19 +846,18 @@ public class DefaultControl extends ControllerAdapter {
 		
 		/**
 		 * 헤드에서 항목 클릭하면 디테일영역에 데이터 가져오기
-		 * @param jsonObjectString
-		 * @return
+		 * @param jsonObjectString 자산아이디(id),자산상태(state)
+		 * @return 헤드에서 선택한 정보 map
 		 */
 		@RequestMapping(value="getrepairform.do", method=RequestMethod.POST)
 		public @ResponseBody Map<String, String> getRepairForm(@RequestBody String jsonObjectString ) {
-			Map<String,String> map= assetService.getRepairForm(jsonToMap(jsonObjectString).get("id"), jsonToMap(jsonObjectString).get("state"));
-			return map;
+			return assetService.getRepairForm(jsonToMap(jsonObjectString).get("id"), jsonToMap(jsonObjectString).get("state"));
 		}
 		
 		/**
 		 * 내부수리기사 점검내역 등록할 때 내부수리시 수리하는 품목에 맞는 부품리스트 보여주기
-		 * @param jsonObjectString
-		 * @return
+		 * @param jsonObjectString 품목아이디(id)
+		 * @return 품목아이디에 사용되는 부품리스트
 		 */
 		@RequestMapping(value="getpartslist.do", method=RequestMethod.POST)
 		public @ResponseBody List<Map<String, String>> getPartsList(@RequestBody String jsonObjectString ) {
@@ -792,25 +865,24 @@ public class DefaultControl extends ControllerAdapter {
 		}
 		
 		/**
-		 * 내부수리기사 점검내역 등록
-		 * @param jsonObjectString
-		 * @return
-		 */
-		@RequestMapping(value="addrepairresult.do", method=RequestMethod.POST)
-		public  @ResponseBody Map<String, String> addRepairResult(HttpSession session, @RequestBody String jsonObjectString) {
-			Map<String, Object> map = jsonToOMap(jsonObjectString);
-			Map<String, String> parts = (Map<String, String>) map.get("list");
-			int result = 0;
-			if(map.get("repairSort").toString().length() != 0 && map.get("repairContent").toString().trim().length() != 0) {
-				result = assetService.addRepairResult(map, parts);
-			}
-//			goRepairList(session);//
-			return areUpdatedToMap(result);
-		}
+	       * 내부수리기사 점검내역 등록
+	       * @param jsonObjectString
+	       * @return 점검내역 등록결과 map
+	       */
+	      @RequestMapping(value="addrepairresult.do", method=RequestMethod.POST)
+	      public  @ResponseBody Map<String, String> addRepairResult(@RequestBody String jsonObjectString) {
+	         Map<String, Object> map = jsonToOMap(jsonObjectString);
+	         Map<String, String> parts = (Map<String, String>) map.get("list");
+	         int result = 0;
+	         if(map.get("repairSort").toString().length() != 0 && map.get("repairContent").toString().trim().length() != 0) {
+	            result = assetService.addRepairResult(map, parts);
+	         }
+	         return areUpdatedToMap(result);
+	      }
 		
 		/**
 		 * 부품조회 페이지로 이동
-		 * @return
+		 * @return 부품조회 페이지
 		 */
 		@RequestMapping("gosearchparts.do")
 		public ModelAndView goSearchPart() {
@@ -819,7 +891,7 @@ public class DefaultControl extends ControllerAdapter {
 		
 		/**
 		 * 모든 부품 리스트 보여주기(부품조회 초기페이지의 데이터)
-		 * @return
+		 * @return 모든 부품 조회한 리스트
 		 */
 		@RequestMapping(value="getallpartslist.do", method=RequestMethod.POST) 
 		public @ResponseBody List<Map<String, String>> getAllParts() {
@@ -828,31 +900,30 @@ public class DefaultControl extends ControllerAdapter {
 		
 		/**
 		 * 내부수리기사 점검결과보기 페이지로 이동
-		 * @return
+		 * @return 내부수리결과 페이지
 		 */
 		@RequestMapping("gorepairresult.do")
 		public ModelAndView goRepairResult() {
-			ModelAndView mv = getPlainPage("searchrepairresult.jsp");
-			return mv;
+			return getPlainPage("searchrepairresult.jsp");
 		}
 		
 		/**
 		 * 내부수리기사 모든 점검결과  보여주기 
-		 * @param session
-		 * @param jsonObjectString
-		 * @return
+		 * @param session 세션
+		 * @param jsonObjectString 
+		 * @return 모든 점검결과 list
 		 */
 		@RequestMapping(value="getallrepairresultlist.do", method=RequestMethod.POST) 
-		public @ResponseBody List<Map<String, String>> getAllRepairResult(HttpSession session,@RequestBody String jsonObjectString) {
+		public @ResponseBody List<Map<String, String>> getAllRepairResult(HttpSession session, @RequestBody String jsonObjectString) {
 			String id = (String) session.getAttribute("loginId");
 			return assetService.getAllRepairResult(id);
 		}
 		
 		/**
 		 * 렌탈 구매, 구매내역확인으로 이동
-		 * @param session
-		 * @param map
-		 * @return
+		 * @param session 세션
+		 * @param map 
+		 * @return 렌탈 구매 후 구매내역 확인 페이지
 		 */
 		@RequestMapping(value="rentalpayment.do", method=RequestMethod.POST) 
 		public ModelAndView rentalPayment(HttpSession session, @RequestParam Map<String, String> map) {
@@ -871,8 +942,8 @@ public class DefaultControl extends ControllerAdapter {
 		
 		/**
 		 * 부속품 검색조회
-		 * @param jsonObjectString
-		 * @return
+		 * @param jsonObjectString 검색 카테고리(searchType), 검색어(searchKeyword)
+		 * @return 부속품 검색한 리스트
 		 */
 		@RequestMapping(value="getsearchpartslist.do", method=RequestMethod.POST) 
 		public @ResponseBody List<Map<String, String>> getSearchPartsList(@RequestBody String jsonObjectString) {
@@ -881,9 +952,9 @@ public class DefaultControl extends ControllerAdapter {
 		
 		/**
 		 * 수리기사 점검내역 결과 검색조회
-		 * @param session
-		 * @param jsonObjectString
-		 * @return
+		 * @param session 세션
+		 * @param jsonObjectString 검색기간 시작일(startDate), 검색기간 마지막일(endDate), 점검분류(repairSort)
+		 * @return 내부수리결과 검색한 리스트
 		 */
 		@RequestMapping(value="getrepairresultlist.do", method=RequestMethod.POST) 
 		public @ResponseBody List<Map<String, String>> getRepairResult(HttpSession session,@RequestBody String jsonObjectString) {
@@ -891,352 +962,352 @@ public class DefaultControl extends ControllerAdapter {
 			List<Map<String, String>> result = assetService.getRepairResult(id, jsonToMap(jsonObjectString).get("startDate"), jsonToMap(jsonObjectString).get("endDate"), jsonToMap(jsonObjectString).get("repairSort"));
 			return result;
 		}
-	
+		
 	/* ======================================== by 이원호 ================================================= */
-	
-	@RequestMapping(value = "goError.do")
-	public ModelAndView goError() {
-		return getErrorPage("mainError.jsp");
-	}
-	@RequestMapping(value = "goMain.do")
-	public ModelAndView goMain() {
-		return getPlainPage("gistMain.jsp");
-	}
-	//직원
-	@RequestMapping(value = "goFoundError.do")
-	public ModelAndView goFoundError() {
-		return getErrorPage("foundError.jsp");
-	}
-	@RequestMapping(value = "goRequestError.do")
-	public ModelAndView goRequestError() {
-		return getErrorPage("requestError.jsp");
-	}
-	@RequestMapping(value = "goEtcError.do")
-	public ModelAndView goEtcError() {
-		return getErrorPage("etcError.jsp");
-	}
-	//사용자
-	@RequestMapping(value = "goUserFoundError.do")
-	public ModelAndView goUserFoundError() {
-		ModelAndView mv = new ModelAndView();
-		mv.addObject("employeeAuth", "aa");
-		return getErrorRedPage(mv, "foundError.jsp");
-	}
-	@RequestMapping(value = "goUserRequestError.do")
-	public ModelAndView goUserRequestError() {
-		return getErrorRedPage("requestError.jsp");
-	}
-	@RequestMapping(value = "goUserEtcError.do")
-	public ModelAndView goUserEtcError() {
-		return getErrorRedPage("etcError.jsp");
-	}
-	
-	/* 로그인 */
-	@RequestMapping(value = "goLogin.do")
-	public ModelAndView goLogin() {
-		donghunCode();
-		return getPlainPage("login.jsp");
-	}
-	
-	/* 회원가입  */
-	@RequestMapping(value = "goJoin.do")
-	public ModelAndView goJoin() {
-		return getPlainPage("join.jsp");
-	}
-
-	//관리자 직원 등록
-	@RequestMapping(value = "goCompanionJoin.do")
-	public ModelAndView goCompanionJoin() {
-		List<Map<String, String>> auList = memberService.getAuthorityList();
-		ModelAndView mv = new ModelAndView();
-		mv.addObject("target", "Employee");
-		if ((auList != null) && (!auList.isEmpty())) {
-			mv.addObject("employeeAuth", auList);
+		// 직원 메인화면
+		@Override
+		public ModelAndView goMain() {
+			return getPlainPage("gistMain.jsp");
 		}
-		return getHeadDetailPage(mv, "memberList.jsp", "companionJoin.jsp");
-	}
-	
-	//관리자 직원 수정
-	@RequestMapping(value = "goCompanionInfo.do")
-	public ModelAndView goCompanionInfo() {
-		List<Map<String, String>> auList = memberService.getAuthorityList();
-		ModelAndView mv = new ModelAndView();
-		mv.addObject("target", "Employee");
-		if ((auList != null) && (!auList.isEmpty())) {
-			mv.addObject("employeeAuth", auList);
+		/*직원 ERROR 페이지 */
+		@Override
+		public ModelAndView goFoundError() {
+			return getErrorPage("foundError.jsp");
 		}
-		return getHeadDetailPage(mv, "memberList.jsp", "companionInfo.jsp");
-	}
-
-	//관리자 고객 수정
-	@RequestMapping(value = "goCusInfo.do")
-	public ModelAndView goCusInfo() {
-		ModelAndView mv = new ModelAndView();
-		mv.addObject("target", "Customer");
-		return getHeadDetailPage(mv, "memberList.jsp", "customerInfo.jsp");
-	}
-	
-	// 회수페이지 이동
-	@RequestMapping(value = "goRefundRequest.do")
-	public ModelAndView goRefundRequest() {
-		ModelAndView mav = new ModelAndView();
-		mav.addObject("state", "Refund");
-		return getHeadDetailPage(mav, "rentalVisitList.jsp", "rentalVisit.jsp");
-	}
-	
-	/* 회원가입  */
-	@RequestMapping("join.do")
-	public ModelAndView join(@RequestParam Map<String, String> customerJoin) {
-		if (customerService.addJoin(customerJoin)) {
+		@Override
+		public ModelAndView goRequestError() {
+			return getErrorPage("requestError.jsp");
+		}
+		@Override
+		public ModelAndView goEtcError() {
+			return getErrorPage("etcError.jsp");
+		}
+		/*사용자 ERROR 페이지 */
+		@Override
+		public ModelAndView goUserFoundError() {
+			ModelAndView mv = new ModelAndView();
+			mv.addObject("employeeAuth", "aa");
+			return getErrorRedPage(mv, "foundError.jsp");
+		}
+		@Override
+		public ModelAndView goUserRequestError() {
+			return getErrorRedPage("requestError.jsp");
+		}
+		@Override
+		public ModelAndView goUserEtcError() {
+			return getErrorRedPage("etcError.jsp");
+		}
+		
+		/* 로그인 */
+		@Override
+		public ModelAndView goLogin() {
+			donghunCode();
 			return getPlainPage("login.jsp");
 		}
-		return getPlainPage("join.jsp");
-	}
-	
-	/* 고객 로그인 */
-	@RequestMapping("customerLogin.do")
-	public ModelAndView customerLogin(String tb_inputId, String tb_inputPw, HttpSession session) {
-		HashMap<String, String> hashmap = customerService.getLogin(tb_inputId, tb_inputPw);
-		if ((hashmap!=null) && (!hashmap.isEmpty())) {
-			session.setAttribute("loginId", hashmap.get("loginId"));
-			session.setAttribute("loginName", hashmap.get("loginName"));
-			session.setAttribute("authority", "customer");
-			return getHeadDetailPage("head.jsp", "detail.jsp");
-		}
-		return getPlainPage("login.jsp");
-	}
-	
-	/* 직원 로그인 */
-	@RequestMapping("employeeLogin.do")
-	public ModelAndView employeeLogin(String tb_inputId, String tb_inputPw, HttpSession session) {
-		HashMap<String, String> hashmap = memberService.getLogin(tb_inputId, tb_inputPw);
-		if ((hashmap!=null) && (!hashmap.isEmpty())) {
-			session.setAttribute("loginId", hashmap.get("loginId"));
-			session.setAttribute("loginName", hashmap.get("loginName"));
-			session.setAttribute("authority", hashmap.get("authority"));
-			return getHeadDetailPage("head.jsp", "detail.jsp");
-		}
-		return getPlainPage("login.jsp");
-	}
-	
-	/* 아이디 중복확인 */
-	@RequestMapping(value="getIdCheck.do", method=RequestMethod.POST)
-	public @ResponseBody boolean idCheck(@RequestBody String jsonObjectString) {
-		return customerService.getIdCheck(jsonToMap(jsonObjectString).get("customerId"));
-	}
-	
-	/* 회수 요청 결과 등록 및 수정 */
-	@RequestMapping(value="setRentalRefundResult.do", method=RequestMethod.POST)
-	public @ResponseBody Boolean refundResult(@RequestBody String jsonObjectString, HttpSession session) {
-		Map<String, String> map = jsonToMap(jsonObjectString);
-		Deprive depriveDto = new Deprive();
-		String date = "";
-		if (map.get("tb_viDay").trim().length() > 0) {
-			date = map.get("tb_viDay").trim().substring(0,10) + map.get("tb_viDay").trim().substring(11);
-		}
-		depriveDto.setId(map.get("tb_depId"));
-		depriveDto.setViId(map.get("hi_viId"));
-		depriveDto.setDay(date);
-		depriveDto.setCuId(map.get("hi_cuId"));
-		depriveDto.setCuName(map.get("tb_cuName"));
-		depriveDto.setPrId(map.get("tb_prId"));
-		depriveDto.setState("re_return");
-		depriveDto.setEngineerId((String)session.getAttribute("loginId"));
-		depriveDto.setEngineerName((String)session.getAttribute("loginName"));
-		depriveDto.setContent(map.get("te_content"));
 		
-		if (map.get("tb_depId").trim().length() > 0) {
-			return rentalService.setRefundResult(depriveDto, map.get("hi_buyId"));
-		} else {
-			return rentalService.addRefundResult(depriveDto, map.get("hi_buyId"));
+		/* 회원가입  */
+		@Override
+		public ModelAndView goJoin() {
+			return getPlainPage("join.jsp");
 		}
-	}
-	
-	//관리자 고객 리스트
-	@RequestMapping(value="getCustomerList.do", method=RequestMethod.POST)
-	public @ResponseBody List<Map<String, String>> getCustomereList(@RequestBody String jsonObjectString) {
-		return customerService.getCustomerList(jsonToMap(jsonObjectString).get("keyword"));  // Dao에서 리스트 가져오기
-	}
-	
-	//관리자 직원 리스트
-	@RequestMapping(value="addCompanionJoin.do", method=RequestMethod.POST)
-	public @ResponseBody Boolean addCompanionJoin(@RequestBody String jsonObjectString) {
-		return memberService.addMemberJoin(jsonToMap(jsonObjectString));  // Dao에서 리스트 가져오기
-	}
-	
-	//관리자 직원 리스트
-	@RequestMapping(value="getEmployeeList.do", method=RequestMethod.POST)
-	public @ResponseBody List<Map<String, String>> getEmployeeList(@RequestBody String jsonObjectString) {
-		return memberService.getMemberList(jsonToMap(jsonObjectString).get("keyword"));  // Dao에서 리스트 가져오기
-	}
-	
-	//관리자 고객 정보
-	@RequestMapping(value="getCustomerInfo.do", method=RequestMethod.POST)
-	public @ResponseBody Map<String, String> getCustomereInfo(@RequestBody String jsonObjectString) {
-		return customerService.getCustomerInfo(jsonToMap(jsonObjectString).get("memberId"));  // Dao에서 리스트 가져오기
-	}
-	
-	//관리자 직원 정보
-	@RequestMapping(value="getEmployeeInfo.do", method=RequestMethod.POST)
-	public @ResponseBody Map<String, String> getEmployeeInfo(@RequestBody String jsonObjectString) {
-		return memberService.getMemberInfo(jsonToMap(jsonObjectString).get("memberId"));  // Dao에서 리스트 가져오기
-	}
-	
-	//관리자 고객, 직원 정보 일괄변경
-	@RequestMapping(value="setMemberChange.do", method=RequestMethod.POST)
-	public @ResponseBody boolean setMemberChange(@RequestBody String jsonObjectString) {
-		Map<String, String> memberInfo = jsonToMap(jsonObjectString);
-		if (memberInfo.get("target").trim().equals("Customer")) {
-			return customerService.setCustomerInfo(memberInfo);
-		} else if(memberInfo.get("target").trim().equals("Employee")) {
-			return memberService.setMemberInfo(memberInfo);
+
+		/*관리자 직원 등록 */
+		@Override
+		public ModelAndView goCompanionJoin() {
+			List<Map<String, String>> auList = memberService.getAuthorityList();
+			ModelAndView mv = new ModelAndView();
+			mv.addObject("target", "Employee");
+			if ((auList != null) && (!auList.isEmpty())) {
+				mv.addObject("employeeAuth", auList);
+			}
+			return getHeadDetailPage(mv, "memberList.jsp", "companionJoin.jsp");
 		}
-		return false;
-	}
-	
-	//관리자 고객, 직원 정보 각각 변경
-	@RequestMapping(value="setMemberItemChange.do", method=RequestMethod.POST)
-	public @ResponseBody boolean setMemberItemChange(@RequestBody String jsonObjectString) {
-		Map<String, String> memberInfo = jsonToMap(jsonObjectString);
-		if (memberInfo.get("hi_target").trim().equals("Customer")) {
-			if(memberInfo.get("column").equals("1")) {
-				if(donghun(memberInfo.get("tb_memId"), memberInfo.get("tb_memPw"))) {
-					System.out.println("전송성공");
-				} else {
-					System.out.println("실패");
+		
+		/*관리자 직원 수정 */
+		@Override
+		public ModelAndView goCompanionInfo() {
+			List<Map<String, String>> auList = memberService.getAuthorityList();
+			ModelAndView mv = new ModelAndView();
+			mv.addObject("target", "Employee");
+			if ((auList != null) && (!auList.isEmpty())) {
+				mv.addObject("employeeAuth", auList);
+			}
+			return getHeadDetailPage(mv, "memberList.jsp", "companionInfo.jsp");
+		}
+
+		/*관리자 고객 수정 */
+		@Override
+		public ModelAndView goCusInfo() {
+			ModelAndView mv = new ModelAndView();
+			mv.addObject("target", "Customer");
+			return getHeadDetailPage(mv, "memberList.jsp", "customerInfo.jsp");
+		}
+		
+		/* 회수페이지 이동 */
+		@Override
+		public ModelAndView goRefundRequest() {
+			ModelAndView mav = new ModelAndView();
+			mav.addObject("state", "Refund");
+			return getHeadDetailPage(mav, "rentalVisitList.jsp", "rentalVisit.jsp");
+		}
+		
+		/* 회원가입  */
+		@RequestMapping("join.do")
+		public ModelAndView join(@RequestParam Map<String, String> customerJoin) {
+			if (customerService.addJoin(customerJoin)) {
+				return getPlainPage("login.jsp");
+			}
+			return getPlainPage("join.jsp");
+		}
+		
+		/* 고객 로그인 */
+		@RequestMapping("customerLogin.do")
+		public ModelAndView customerLogin(String tb_inputId, String tb_inputPw, HttpSession session) {
+			HashMap<String, String> hashmap = customerService.getLogin(tb_inputId, tb_inputPw);
+			if ((hashmap!=null) && (!hashmap.isEmpty())) {
+				session.setAttribute("loginId", hashmap.get("loginId"));
+				session.setAttribute("loginName", hashmap.get("loginName"));
+				session.setAttribute("authority", "customer");
+				return getPlainRedPage("rentalmain.jsp");
+			}
+			return getPlainPage("login.jsp");
+		}
+		
+		/* 직원 로그인 */
+		@RequestMapping("employeeLogin.do")
+		public ModelAndView employeeLogin(String tb_inputId, String tb_inputPw, HttpSession session) {
+			HashMap<String, String> hashmap = memberService.getLogin(tb_inputId, tb_inputPw);
+			if ((hashmap!=null) && (!hashmap.isEmpty())) {
+				session.setAttribute("loginId", hashmap.get("loginId"));
+				session.setAttribute("loginName", hashmap.get("loginName"));
+				session.setAttribute("authority", hashmap.get("authority"));
+				return getPlainPage("gistMain.jsp");
+			}
+			return getPlainPage("login.jsp");
+		}
+		
+		/* 아이디 중복확인 */
+		@RequestMapping(value="getIdCheck.do", method=RequestMethod.POST)
+		public @ResponseBody boolean idCheck(@RequestBody String jsonObjectString) {
+			return customerService.getIdCheck(jsonToMap(jsonObjectString).get("customerId"));
+		}
+		
+		/* 회수 요청 결과 등록 및 수정 */
+		@RequestMapping(value="setRentalRefundResult.do", method=RequestMethod.POST)
+		public @ResponseBody Boolean refundResult(@RequestBody String jsonObjectString, HttpSession session) {
+			Map<String, String> map = jsonToMap(jsonObjectString);
+			Deprive depriveDto = new Deprive();
+			String date = "";
+			if (map.get("tb_viDay").trim().length() > 0) {
+				date = map.get("tb_viDay").trim().substring(0,10) + map.get("tb_viDay").trim().substring(11);
+			}
+			depriveDto.setId(map.get("tb_depId"));
+			depriveDto.setViId(map.get("hi_viId"));
+			depriveDto.setDay(date);
+			depriveDto.setCuId(map.get("hi_cuId"));
+			depriveDto.setCuName(map.get("tb_cuName"));
+			depriveDto.setPrId(map.get("tb_prId"));
+			depriveDto.setState("re_return");
+			depriveDto.setEngineerId((String)session.getAttribute("loginId"));
+			depriveDto.setEngineerName((String)session.getAttribute("loginName"));
+			depriveDto.setContent(map.get("te_content"));
+			
+			if (map.get("tb_depId").trim().length() > 0) {
+				return rentalService.setRefundResult(depriveDto, map.get("hi_buyId"));
+			} else {
+				return rentalService.addRefundResult(depriveDto, map.get("hi_buyId"));
+			}
+		}
+		
+		/*관리자 고객 리스트 */
+		@RequestMapping(value="getCustomerList.do", method=RequestMethod.POST)
+		public @ResponseBody List<Map<String, String>> getCustomereList(@RequestBody String jsonObjectString) {
+			return customerService.getCustomerList(jsonToMap(jsonObjectString).get("keyword"));
+		}
+		
+		/*관리자 직원 등록 */
+		@RequestMapping(value="addCompanionJoin.do", method=RequestMethod.POST)
+		public @ResponseBody Boolean addCompanionJoin(@RequestBody String jsonObjectString) {
+			Map<String, String> map = jsonToMap(jsonObjectString);
+			SmsService sms = new SmsService();
+			sms.sendSms(map.get("tb_memMobile"), map.get("tb_memId"), map.get("tb_memPw"));
+			return memberService.addMemberJoin(map);
+		}
+		
+		/*관리자 직원 리스트 */
+		@RequestMapping(value="getEmployeeList.do", method=RequestMethod.POST)
+		public @ResponseBody List<Map<String, String>> getEmployeeList(@RequestBody String jsonObjectString) {
+			return memberService.getMemberList(jsonToMap(jsonObjectString).get("keyword"));
+		}
+		
+		/*관리자 고객 정보 */
+		@RequestMapping(value="getCustomerInfo.do", method=RequestMethod.POST)
+		public @ResponseBody Map<String, String> getCustomereInfo(@RequestBody String jsonObjectString) {
+			return customerService.getCustomerInfo(jsonToMap(jsonObjectString).get("memberId"));
+		}
+		
+		/*관리자 직원 정보 */
+		@RequestMapping(value="getEmployeeInfo.do", method=RequestMethod.POST)
+		public @ResponseBody Map<String, String> getEmployeeInfo(@RequestBody String jsonObjectString) {
+			Map<String, String> map = jsonToMap(jsonObjectString);
+			return memberService.getMemberInfo(map.get("memberId"));
+		}
+		
+		/*관리자 고객, 직원 정보 일괄변경 */
+		@RequestMapping(value="setMemberChange.do", method=RequestMethod.POST)
+		public @ResponseBody boolean setMemberChange(@RequestBody String jsonObjectString) {
+			Map<String, String> memberInfo = jsonToMap(jsonObjectString);
+			if (memberInfo.get("target").trim().equals("Customer")) {
+				return customerService.setCustomerInfo(memberInfo);
+			} else if(memberInfo.get("target").trim().equals("Employee")) {
+				if(memberService.setMemberInfo(memberInfo)) {
+					SmsService sms = new SmsService();
+					return sms.sendSms(memberInfo.get("tb_memMobile"), memberInfo.get("tb_memId"), memberInfo.get("tb_memPw"));
 				}
 			}
-			return customerService.setCustomerInfoDetail(memberInfo);
-		} else if(memberInfo.get("hi_target").trim().equals("Employee")) {
-			return memberService.setMemberInfoDetail(memberInfo);
+			return false;
 		}
-		return false;
-	}
-	
-	//관리자 직원 아이디 자동 부여
-	@RequestMapping(value="getNewId.do", method=RequestMethod.POST)
-	public @ResponseBody String getNewId(@RequestBody String jsonObjectString) {
-		return memberService.getRandomEmpl();
-	}
-	
-	//상담사 물품 수량 조회
-	@RequestMapping(value="getProductCount.do", method=RequestMethod.POST)
-	public @ResponseBody Map<String, String> getProductCount(@RequestBody String jsonObjectString) {
-		Map<String, String> item = jsonToMap(jsonObjectString);
-		return assetService.getProductCount(item.get("itId"), item.get("itName"));
-	}
-	
-	//상담사 물품 수량 조회
-	@RequestMapping(value="addTempCustomer.do", method=RequestMethod.POST)
-	public @ResponseBody String addTempCustomer(@RequestBody String jsonObjectString) {
-		return customerService.addTempCustomer(jsonToMap(jsonObjectString));
-	}
-	
-	//상담사 상담 아이디 생성
-	@RequestMapping(value="addAdviceId.do", method=RequestMethod.POST)
-	public @ResponseBody String addAdviceId(HttpSession session) {
-		return rentalService.getAdviceId((String)session.getAttribute("loginId"));
-	}
-	
-	//상담사 일반 상담
-	@RequestMapping(value="addNomalAdvice.do", method=RequestMethod.POST)
-	public @ResponseBody String addNomalAdvice(@RequestBody String jsonObjectString, HttpSession session) {
-		Map<String, String> map = jsonToMap(jsonObjectString);
-		map.put("adSort", "a");
-		map.put("sb_item", "");
-		map.put("emId", (String)session.getAttribute("loginId"));
-		int result = rentalService.addNomalAdvice(map);
-		if (result == 1) {
-			return "1";
-		}
-		return null;
-	}
-	
-	//상담사 일반 상담
-	@RequestMapping(value="addRentalAdvice.do", method=RequestMethod.POST)
-	public @ResponseBody String addRentalAdvice(@RequestBody String jsonObjectString, HttpSession session) {
-		Map<String, String> map = jsonToMap(jsonObjectString);
-		map.put("adSort", "b");
-		map.put("emId", (String)session.getAttribute("loginId"));
-		int result = rentalService.addRentalAdvice(map);
-		if (result == 1) {
-			return "1";
-		}
-		return null;
-	}
-	
-	/* 관리자 고객 비밀번호 변경 시 메일 전송 */
-	public boolean donghun(String customerId, String newPw) {
-		System.out.println(customerId + "cuId");
-		String to = customerId;
-		//String to = "leewonho93@naver.com";
-		String from = "leedh93@hanmail.net";
 		
-		Properties p = new Properties();
-		p.put("mail.smtp.host","smtp.daum.net");
-		p.put("mail.smtp.port", "465");
-		p.put("mail.smtp.starttls.enable", "true");
-		p.put("mail.smtp.auth", "true");
-		p.put("mail.smtp.debug", "true");
-		p.put("mail.smtp.socketFactory.port", "465");
-		p.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-		p.put("mail.smtp.socketFactory.fallback", "false");
+		/*관리자 고객, 직원 정보 각각 변경 */
+		@RequestMapping(value="setMemberItemChange.do", method=RequestMethod.POST)
+		public @ResponseBody boolean setMemberItemChange(@RequestBody String jsonObjectString) {
+			Map<String, String> memberInfo = jsonToMap(jsonObjectString);
+			if (memberInfo.get("hi_target").trim().equals("Customer")) {
+				if(memberInfo.get("column").equals("1")) {
+					if(donghun(memberInfo.get("tb_memId"), memberInfo.get("tb_memPw"))) {
+						System.out.println("전송성공");
+					} else {
+						System.out.println("실패");
+					}
+				}
+				return customerService.setCustomerInfoDetail(memberInfo);
+			} else if(memberInfo.get("hi_target").trim().equals("Employee")) {
+				return memberService.setMemberInfoDetail(memberInfo);
+			}
+			return false;
+		}
 		
-		try{
-	    	Authenticator auth = new SMTPAuthenticatior();
-	        Session ses = Session.getInstance(p, auth);
-	        /* ses.setDebug(true); */
-	        MimeMessage msg = new MimeMessage(ses); // 메일의 내용을 담을 객체 
-	     
-	        msg.setSubject("[GIST] 개인정보 이용 안내"); //  제목
-	        StringBuffer buffer = new StringBuffer();
-	        buffer.append("고객님의 요청으로 인하여 개인 정보가 변경되었습니다.");
-	        buffer.append("변경된 회원님의 임시비밀번호는 ' " + newPw +" ' 입니다.");
-	        buffer.append("변경한 내역이 존재하지 않으실 경우 고객센터에 문의하여 주세요.");
-	        Address fromAddr = new InternetAddress(from);
-	        msg.setFrom(fromAddr); 
-	     
-	        Address toAddr = new InternetAddress(to);
-	        msg.addRecipient(Message.RecipientType.TO, toAddr); // 받는 사람
-	         
-	        msg.setContent(buffer.toString(), "text/html;charset=UTF-8"); // 내용
-	        Transport.send(msg); // 전송  
-	     
-	    } catch(Exception e){
-	        e.printStackTrace();
-	        return false;
-	    }
-		return true;
+		/*관리자 직원 아이디 자동 부여 */
+		@RequestMapping(value="getNewId.do", method=RequestMethod.POST)
+		public @ResponseBody String getNewId(@RequestBody String jsonObjectString) {
+			return memberService.getRandomEmpl();
+		}
+		
+		/*상담사 물품 수량 조회 */
+		@RequestMapping(value="getProductCount.do", method=RequestMethod.POST)
+		public @ResponseBody Map<String, String> getProductCount(@RequestBody String jsonObjectString) {
+			Map<String, String> item = jsonToMap(jsonObjectString);
+			return assetService.getProductCount(item.get("itId"), item.get("itName"));
+		}
+		
+		/*상담사 물품 수량 조회 */
+		@RequestMapping(value="addTempCustomer.do", method=RequestMethod.POST)
+		public @ResponseBody String addTempCustomer(@RequestBody String jsonObjectString) {
+			return customerService.addTempCustomer(jsonToMap(jsonObjectString));
+		}
+		
+		/*상담사 상담 아이디 생성 */
+		@RequestMapping(value="addAdviceId.do", method=RequestMethod.POST)
+		public @ResponseBody String addAdviceId(HttpSession session) {
+			return rentalService.getAdviceId((String)session.getAttribute("loginId"));
+		}
+		
+		/*상담사 일반 상담 */
+		@RequestMapping(value="addNomalAdvice.do", method=RequestMethod.POST)
+		public @ResponseBody String addNomalAdvice(@RequestBody String jsonObjectString, HttpSession session) {
+			Map<String, String> map = jsonToMap(jsonObjectString);
+			System.out.println(map + " : 상담");
+			map.put("adSort", "a");
+			map.put("sb_item", "");
+			map.put("emId", (String)session.getAttribute("loginId"));
+			int result = rentalService.addNomalAdvice(map);
+			if (result == 1) {
+				return "1";
+			}
+			return "0";
+		}
+		
+		/*상담사 일반 상담 */
+		@RequestMapping(value="addRentalAdvice.do", method=RequestMethod.POST)
+		public @ResponseBody String addRentalAdvice(@RequestBody String jsonObjectString, HttpSession session) {
+			Map<String, String> map = jsonToMap(jsonObjectString);
+			System.out.println("렌탈 상담 : " + map);
+			map.put("adSort", "b");
+			map.put("emId", (String)session.getAttribute("loginId"));
+			int result = rentalService.addRentalAdvice(map);
+			if (result == 1) {
+				return "1";
+			}
+			return "0";
+		}
+		
+		/* 관리자 고객 비밀번호 변경 시 메일 전송 */
+		public boolean donghun(String customerId, String newPw) {
+			String to = customerId;
+			String from = "leedh93@hanmail.net";
+			
+			Properties p = new Properties();
+			p.put("mail.smtp.host","smtp.daum.net");
+			p.put("mail.smtp.port", "465");
+			p.put("mail.smtp.starttls.enable", "true");
+			p.put("mail.smtp.auth", "true");
+			p.put("mail.smtp.debug", "true");
+			p.put("mail.smtp.socketFactory.port", "465");
+			p.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+			p.put("mail.smtp.socketFactory.fallback", "false");
+			
+			try{
+		    	Authenticator auth = new SMTPAuthenticatior();
+		        Session ses = Session.getInstance(p, auth);
+		        MimeMessage msg = new MimeMessage(ses);
+		     
+		        msg.setSubject("[GIST] 개인정보 이용 안내");
+		        StringBuilder buffer = new StringBuilder();
+		        buffer.append("고객님의 요청으로 인하여 개인 정보가 변경되었습니다.<br><br>");
+		        buffer.append("변경된 회원님의 임시비밀번호는   <font color=\"red\"  style=\"font-size: 20px; font-weight: bold;\">"+ newPw +"</font>  입니다.<br><br>");
+		        buffer.append("변경한 내역이 존재하지 않으실 경우 고객센터에 문의하여 주세요.");
+		        Address fromAddr = new InternetAddress(from);
+		        msg.setFrom(fromAddr); 
+		     
+		        Address toAddr = new InternetAddress(to);
+		        msg.addRecipient(Message.RecipientType.TO, toAddr);
+		        msg.setContent(buffer.toString(), "text/html;charset=UTF-8");
+		        Transport.send(msg);
+		    } catch(Exception e){
+		        e.printStackTrace();
+		        return false;
+		    }
+			return true;
+		}
+		
+		//ZXING
+		@RequestMapping(value="addQrCode.do", method=RequestMethod.POST)
+		public @ResponseBody void donghunCode() {
+			try {
+	            File file = null;
+	            // 큐알이미지를 저장할 디렉토리 지정
+	            file = new File("I:\\ho\\eclipseall\\ReMPP\\remp\\src\\main\\webapp\\resources\\images");
+	            if(!file.exists()) {
+	                file.mkdirs();
+	            }
+	            // 코드인식시 링크걸 URL주소
+	            String codeurl = new String("http://192.168.0.110:8093/work/".getBytes("UTF-8"), "ISO-8859-1");
+	            // 큐알코드 바코드 생상값
+	            int qrcodeColor = 0xFF00FF00;
+	            // 큐알코드 배경색상값
+	            int backgroundColor = 0x00FF00FF;
+	             
+	            QRCodeWriter qrCodeWriter = new QRCodeWriter();
+	            // 3,4번째 parameter값 : width/height값 지정
+	            BitMatrix bitMatrix = qrCodeWriter.encode(codeurl, BarcodeFormat.QR_CODE,200, 200);
+	            //
+	            MatrixToImageConfig matrixToImageConfig = new MatrixToImageConfig(qrcodeColor,backgroundColor);
+	            BufferedImage bufferedImage = MatrixToImageWriter.toBufferedImage(bitMatrix,matrixToImageConfig);
+	            // ImageIO를 사용한 바코드 파일쓰기
+	            ImageIO.write(bufferedImage, "png", new File("I:\\ho\\eclipseall\\ReMPP\\remp\\src\\main\\webapp\\resources\\images\\qrcode.png"));
+	             
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+		}
 	}
-	
-	//ZXING
-	@RequestMapping(value="addQrCode.do", method=RequestMethod.POST)
-	public @ResponseBody void donghunCode() {
-		try {
-            File file = null;
-            // 큐알이미지를 저장할 디렉토리 지정
-            file = new File("I:\\ho\\eclipseall\\ReMPP\\remp\\src\\main\\webapp\\resources\\images");
-            if(!file.exists()) {
-                file.mkdirs();
-            }
-            // 코드인식시 링크걸 URL주소
-            String codeurl = new String("http://192.168.0.110:8093/work/".getBytes("UTF-8"), "ISO-8859-1");
-            // 큐알코드 바코드 생상값
-            int qrcodeColor = 0xFF00FF00;
-            // 큐알코드 배경색상값
-            int backgroundColor = 0x00FF00FF;
-             
-            QRCodeWriter qrCodeWriter = new QRCodeWriter();
-            // 3,4번째 parameter값 : width/height값 지정
-            BitMatrix bitMatrix = qrCodeWriter.encode(codeurl, BarcodeFormat.QR_CODE,200, 200);
-            //
-            MatrixToImageConfig matrixToImageConfig = new MatrixToImageConfig(qrcodeColor,backgroundColor);
-            BufferedImage bufferedImage = MatrixToImageWriter.toBufferedImage(bitMatrix,matrixToImageConfig);
-            // ImageIO를 사용한 바코드 파일쓰기
-            ImageIO.write(bufferedImage, "png", new File("I:\\ho\\eclipseall\\ReMPP\\remp\\src\\main\\webapp\\resources\\images\\qrcode.png"));
-             
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-	}
-}

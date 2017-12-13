@@ -1,6 +1,5 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 
 <!-- 입고조회영역-->
 <div class="item_wrapper">
@@ -29,8 +28,6 @@
 			</tr>
 		</thead>
 		<tbody id="inputList">
-			<tr>
-			</tr>
 		</tbody>
 	</table>
 </div>

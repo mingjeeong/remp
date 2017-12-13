@@ -1,6 +1,5 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="com.remp.work.model.dto.Product" %>
 
@@ -23,7 +22,7 @@
 
 <!-- 결과값 리스트 -->
 <div style="width: 100%; height: 80%; overflow: scroll;">
-	<table id="repairList" class="table table-striped table-hover table-bordered table-sm">
+	<table id="repairList" class="table table-striped table-hover table-bordered table-sm is-line">
 		<thead class="thead-dark">
 			<tr><th>자산ID</th><th>품목명</th><th>상태</th><th>신청일자</th></tr>
 		<thead>

@@ -1,6 +1,5 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 
 <!-- 내부수리기사 검검내용 작성 detail -->
 <div class="item_wrapper">
@@ -10,7 +9,7 @@
 <div style="width: 100%; height: 80%; overflow: scroll;">
 
 <form name="repairInputForm">
-	<table id="repairForm" class="table table-striped table-hover table-bordered table-sm">
+	<table id="repairForm" class="table table-striped table-hover table-bordered table-sm is-line">
 		<tr>
 			<th>자산ID</th>
 			<td><input type="text" id="productId" name="productId" class="form-control" readonly></td>
@@ -38,7 +37,7 @@
 		<tr>
 			<th>점검분류</th>
 			<td>
-				<select id="repairSort" class="form-control" name="repairSort" required="required">
+				<select id="repairSort" class="form-control" name="repairSort" required>
 					<option value="" >==선택하세요==</option>
 					<option value="wa_product">내부수리완료</option> 
 					<option value="wa_repair">수리대기</option>
@@ -51,7 +50,7 @@
 			<th colspan="2">점검내용</th>
 		</tr>
 		<tr>
-			<td colspan="2"><textarea name="repairContents" id="repairContents" rows="5" style="width:100%" required="required"></textarea></td>
+			<td colspan="2"><textarea name="repairContents" id="repairContents" rows="5" style="width:100%" required></textarea></td>
 		</tr>
 	</table>
 </form>
@@ -72,7 +71,7 @@
 		</tbody>
 	</table>
 </form>
-<input type="button" id="bt_addRepairResult" value="등록" class="btn btn-primary btn-sm" onclick="addRepairResult(this)">
+<input type="button" value="등록" class="btn btn-primary btn-sm" onclick="addRepairResult()">
 
 </div>
 

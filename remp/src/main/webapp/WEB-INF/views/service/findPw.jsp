@@ -1,6 +1,5 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -44,7 +43,7 @@
 						<label>전화번호</label>
 					</td>
 					<td>
-						<input type="tel" id="tb_mobile" name="tb_mobile" title="숫자 조합" placeholder="-를 제외한 전화번호를 입력하여 주세요"  
+						<input type="tel" id="tb_mobile" name="tb_mobile" title="숫자 조합" placeholder="-를 포함한 전화번호를 입력하여 주세요"  
 						class="form-control"  required maxlength="30" >
 					</td>
 				</tr>

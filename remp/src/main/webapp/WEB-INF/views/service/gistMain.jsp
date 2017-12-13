@@ -7,24 +7,37 @@
 <title>Insert title here</title>
 </head>
 <body>
-<form action="uploadTest.do" id="fileTestForm" name="fileTestForm" method="post">
-<div class="card border-dark mb-3" style="max-width: 20rem; float: left;">
-  <div class="card-header">Header</div>
-  <div class="card-body text-dark">
-    <h4 class="card-title">Dark card title</h4>
-    <input type="file" id="tb_file" name="tb_file">
-  <!--   <input type="button" name="bt_a" value="a" onclick="uploadTest()"> --> <!-- FILE 업로드 -->
-    <input type="button" name="bt_a" value="a" onclick="qrCreate()"> <!-- QR 생성 -->
-  </div>
+<div style="width: 100%" align="center">
+	<img alt="GIST" src="resources/images/logo.png" width="40%" height="300px" style="margin: auto;">
 </div>
-</form>
-<div class="card border-dark mb-3" style="max-width: 20rem; float: left;" id="aaaa">
-  <div class="card-header"><h3>GIST ?</h3></div>
-  <div class="card-body text-dark">
-    <h4 class="card-title">GIST는 2017/10/31에 설립되었습니다.</h4>
-	<input type="color" name="tb_color" id="tb_color" onchange="changeColor(this.value)">
-  </div>
-</div>
-
+<br>
+<table align="center" style="width: 700px">
+	<tr>
+		<td>
+			<div class="card border-dark mb-3" style="min-width: 20rem; max-width: 20rem;">
+			  <div class="card-header"><h4>GIST ?</h4></div>
+			  <div class="card-body text-dark" style="height: 100%">
+			  	<p>GIST는 2017년 설립되었으며 고객님들의 업무에 집중을 위해 기본 서비스를 제공해주는 기업입니다.</p>
+			  	<p>GIST는 ReMP 서비스를 제공합니다.</pre>
+			  	<p>ReMP는 렌탈, 재고 관리를 도와주는 서비스 입니다.</p>
+			  </div>
+			</div>
+		</td>
+		<td>
+			<div class="card border-dark mb-3 is-line" style="min-width: 20rem; max-width: 20rem;">
+			  <div class="card-header"><h4>ReMP의 기능</h4></div>
+			  <div class="card-body text-dark" style="height: 100%">
+				<ul>
+					<li style="margin-bottom: 12px">고객 관리</li>
+					<li style="margin-bottom: 12px">직원 관리</li>
+					<li style="margin-bottom: 12px">재고 관리</li>
+					<li style="margin-bottom: 12px">렌탈 서비스</li>
+					<li>상담 서비스</li>
+				</ul>
+			  </div>
+			</div>
+		</td>
+	</tr>
+</table>
 </body>
 </html>

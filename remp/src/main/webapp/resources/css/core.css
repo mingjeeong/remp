@@ -71,7 +71,7 @@ div.msgWindow {
 .msgBtn {
 	margin-right: 3px;
 }
-
+/* 메시지 윈도우 관련 */
 div.msgWindowHead {
 	width: 300px;
 	height: 30px;
@@ -103,6 +103,33 @@ div.msgWindowHead {
 	list-style-type: none;
 }
 
+/* 패스워드창 */
+div.passwordWindow {
+	position: fixed !important;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, .8);
+}
+
+div.passwordWindow .pwWindowBody {
+	border-radius: 10px;
+	margin: 10% auto -10%;
+	padding: 30px;
+	width: 600px;
+	background-color: white;
+}
+
+div.passwordWindow .pwWindowBody .pwAction:after {
+	content: " ";
+	clear: both;
+	overflow: hidden;
+	display: block;
+	padding-top: 10px;
+}
+
+/* 김재림 공통 */
 .left {
 	float: left;
 }
@@ -121,49 +148,49 @@ div.nameTag {
 	vertical-align: middle;
 }
 
-div.left-w10{
+.left-w10{
 	float: left;
-	width: 10%;
+	width: 10% !important;
 }
 
-div.left-w20 {
+.left-w20 {
 	float: left;
-	width: 20%;
+	width: 20% !important;
 }
 
-div.left-w30 {
+.left-w30 {
 	float: left;
-	width: 30%;
+	width: 30% !important;
 }
 
-div.left-w40 {
+.left-w40 {
 	float: left;
-	width: 40%;
+	width: 40% !important;
 }
 
-div.left-w50 {
+.left-w50 {
 	float: left;
-	width: 50%;
+	width: 50% !important;
 }
 
-div.left-w60 {
+.left-w60 {
 	float: left;
-	width: 60%;
+	width: 60% !important;
 }
 
-div.left-w70 {
+.left-w70 {
 	float: left;
-	width: 70%;
+	width: 70% !important;
 }
 
-div.left-w80 {
+.left-w80 {
 	float: left;
-	width: 80%;
+	width: 80% !important;
 }
 
-div.left-w90 {
+.left-w90 {
 	float: left;
-	width: 90%;
+	width: 90% !important;
 }
 
 div.head {
@@ -228,8 +255,6 @@ span.nameTag{
 	background-color: #F8F5F0;
     opacity: 1;
 }
-
-
 /* ======================================== by 이동훈 ================================================= */
 tr.rent_tr {
 	height: 45px;  
@@ -304,7 +329,7 @@ span.space{
 div.space{
 	margin: 0 3px;
 }
-div.left-w25 {
+.left-w25{
 	float: left;
-	width: 25%;
+	width: 25% !important;
 }

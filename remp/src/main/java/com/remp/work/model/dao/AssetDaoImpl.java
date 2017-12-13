@@ -14,6 +14,7 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import com.remp.work.model.dto.Fix;
 import com.remp.work.model.dto.Product;
 import com.remp.work.util.RempUtility;
 
@@ -156,8 +157,43 @@ public class AssetDaoImpl implements AssetDao {
 		} finally {
 			factory.close(con, pstmt);
 		}
-		
 		return result;
+	}
+	
+	/* as요청 등록 시 회수처리일 경우 입고테이블 상태변경 */
+	@Override
+	public int updateInState(Map<String, String> map) {
+		Connection con = null;
+	      PreparedStatement pstmt = null;
+	      ResultSet rs = null;
+	      String sql1 = "SELECT it_id FROM product WHERE pr_id=?";
+	      String sql = "INSERT INTO input(in_id,pr_id,it_id,in_count,in_state,in_day,in_delivery,in_complete) "
+	            + "VALUES ('IN'||trim(to_char(SEQ_IN_ID.nextval, '0000000000')),?,?,?,?,?,?,?)";
+	      try {
+	         con = factory.getConnection();
+	         pstmt = con.prepareStatement(sql1);
+	         pstmt.setString(1, map.get("hi_prId"));
+	         rs = pstmt.executeQuery();
+	         if (rs.next()) {
+	        	if(map.get("hi_outState").equals("re_return")) {
+	        		String itId= rs.getString("it_id");
+	        		pstmt = con.prepareStatement(sql);
+	        		pstmt.setString(1, map.get("hi_prId"));
+	        		pstmt.setString(2, itId);
+	        		pstmt.setString(3, "1");
+	        		pstmt.setString(4, "re_return");
+	        		pstmt.setString(5, map.get("hi_outDay"));
+	        		pstmt.setString(6, map.get("engineerName"));
+	        		pstmt.setString(7, "N");
+	        	}
+	            return pstmt.executeUpdate();
+	         }
+	      } catch (Exception e) {
+	         e.printStackTrace();
+	      } finally {
+	         factory.close(con, pstmt, rs);
+	      }
+	      return 0;
 	}
 
 	@Override
@@ -295,11 +331,16 @@ public class AssetDaoImpl implements AssetDao {
 			con = factory.getConnection();
 			if(keyword.trim().equals("") || keyword == null) {
 				System.out.println("selectProduct 전체조회");
-				sql = "select * from product";
+				sql = "select nvl(pr_id, '-') \"pr_id\", nvl(buy_id, '-') \"buy_id\", nvl(it_id, '-') \"it_id\", nvl(it_name, '-') \"it_name\", nvl(pr_first_day, to_date('111111111111', 'yyyy-mm-ddhh24:mi')) \"pr_first_day\", "
+						+ "nvl(pr_in_day, to_date('111111111111', 'yyyy-mm-ddhh24:mi')) \"pr_in_day\", nvl(pr_out_day, to_date('111111111111', 'yyyy-mm-ddhh24:mi')) \"pr_out_day\", nvl(pr_out_target, '-') \"pr_out_target\", nvl(pr_location, '-') \"pr_location\", "
+						+ "nvl(pr_needs, '-') \"pr_needs\", nvl(pr_state, '-') \"pr_state\", nvl(pr_count, 0) \"pr_count\", nvl(pr_qr, '-') \"pr_qr\" from product";
 				pstmt = con.prepareStatement(sql);
 			} else {
-				System.out.println("selectProduct 검색조회");		// 날짜검색 시 yy/mm/dd 형식으로만 검색이 가능함....
-				sql = "select * from product where pr_id like ? or buy_id like ? or it_id like ? or it_name like ? or "
+				System.out.println("selectProduct 검색조회");
+				sql = "select nvl(pr_id, '-') \"pr_id\", nvl(buy_id, '-') \"buy_id\", nvl(it_id, '-') \"it_id\", nvl(it_name, '-') \"it_name\", nvl(pr_first_day, to_date('111111111111', 'yyyy-mm-ddhh24:mi')) \"pr_first_day\", "
+						+ "nvl(pr_in_day, to_date('111111111111', 'yyyy-mm-ddhh24:mi')) \"pr_in_day\", nvl(pr_out_day, to_date('111111111111', 'yyyy-mm-ddhh24:mi')) \"pr_out_day\", nvl(pr_out_target, '-') \"pr_out_target\", nvl(pr_location, '-') \"pr_location\", "
+						+ "nvl(pr_needs, '-') \"pr_needs\", nvl(pr_state, '-') \"pr_state\", nvl(pr_count, 0) \"pr_count\", nvl(pr_qr, '-') \"pr_qr\"  "
+						+ "from product where pr_id like ? or buy_id like ? or it_id like ? or it_name like ? or "
 						+ "pr_first_day like ? or pr_in_day like ? or pr_out_day like ? or  pr_out_target like ? or "
 						+ "pr_location like ? or pr_needs like ? or pr_state like ? or pr_count like ? or pr_qr like ? order by pr_id";
 				pstmt = con.prepareStatement(sql);
@@ -441,17 +482,20 @@ public class AssetDaoImpl implements AssetDao {
 	public int updateProductUpdateAll(Map<String, String>map) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
-		String sql = "update item set it_price = ?, it_period = ?, it_content = ?, it_acquisition = ?, it_image = ? where it_id = ?";
+		String sql = "update item set it_name = ?, it_code = ?, it_manufacturer = ?, it_price = ?, it_period = ?, it_content = ?, it_acquisition = ?, it_image = ? where it_id = ?";
 		int result = 0;
 		try {
 			con = factory.getConnection();
 			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, map.get("tb_itPrice"));
-			pstmt.setString(2, map.get("tb_itPeriod"));
-			pstmt.setString(3, map.get("ta_itContent"));
-			pstmt.setString(4, map.get("tb_itAcquisition"));
-			pstmt.setString(5, map.get("tb_itImage"));
-			pstmt.setString(6, map.get("hi_itId"));
+			pstmt.setString(1, map.get("tb_itName"));
+			pstmt.setString(2, map.get("tb_itCode"));
+			pstmt.setString(3, map.get("tb_itManufacturer"));
+			pstmt.setString(4, map.get("tb_itPrice"));
+			pstmt.setString(5, map.get("tb_itPeriod"));
+			pstmt.setString(6, map.get("ta_itContent"));
+			pstmt.setString(7, map.get("tb_itAcquisition"));
+			pstmt.setString(8, map.get("tb_itImage"));
+			pstmt.setString(9, map.get("hi_itId"));
 			result = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			System.out.println("updateProductUpdateAllIt SQL Error");
@@ -468,18 +512,17 @@ public class AssetDaoImpl implements AssetDao {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		List<Map<String, String>> list = new ArrayList<>();
-		String sql = "select * from input where in_complete='N' and (in_state = 're_ninput' or in_state = 're_npart' or in_state = 're_nother')";
+//		String sql = "select * from input where in_complete='N' and "
+//				+ "(in_state = 're_ninput' or in_state = 're_npart' or in_state = 're_nother' or in_state='re_exinput' or in_state='re_return')";
+		String sql = "select pr_id, pr_first_day from product where pr_state='wa_ninput'";
 		try {
 			con = factory.getConnection();
 			pstmt = con.prepareStatement(sql);
 			rs = pstmt.executeQuery();
 			while(rs.next()) {
 				Map<String, String> map = new HashMap<>();
-				map.put("inName", rs.getString("it_id"));
-				map.put("inState", rs.getString("in_state"));
-				map.put("inFDay", rs.getString("in_fday"));
-				map.put("inComplete", rs.getString("in_complete"));
 				map.put("prId", rs.getString("pr_id"));
+				map.put("prFDay", rs.getString("pr_first_day"));
 				list.add(map);
 			}
 		} catch (SQLException e) {
@@ -584,52 +627,157 @@ public class AssetDaoImpl implements AssetDao {
 	}
 	
 	@Override
-	public int insertProductInsertIt(Map<String, String> map) {
+	public int updateProductInsertIt(Map<String, String> map) {
 		Connection con = null;
 		PreparedStatement pstmt = null;
-		String sql = "insert into item values(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		ResultSet rs = null;
+		String sql = "select * from item where it_id = ?";
+		String sql2 = "update item set it_name=?, it_code=?, it_price=?, it_acquisition=?, it_period=?, it_manufacturer=?, it_content=?, it_image=? where it_id=?";
+		String sql3 = "insert into item values(?, ?, ?, ?, ?, ?, ?, ?, ? )";
+		String sql4 = "select 'it'||trim(to_char(item_seq.nextval,'0000000000')) AS \"num\" from dual";
 		int result = 0;
+		int kuku = 0;
+		String itId = null;
 		try {
+			System.out.println("아이템 업데이트");
+			
 			con = factory.getConnection();
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, map.get("tb_itId"));
-			pstmt.setString(2, map.get("tb_itName"));
-			pstmt.setString(3, map.get("tb_itPrice"));
-			pstmt.setString(4, map.get("tb_itCode"));
-			pstmt.setString(5, map.get("tb_itAcquisition"));
-			pstmt.setString(6, map.get("tb_itPeriod"));
-			pstmt.setString(7, map.get("tb_itManufacturer"));
-			pstmt.setString(8, map.get("tb_itContent"));
-			pstmt.setString(9, map.get("tb_itImage"));
+			if (map.get("tb_itId").trim().length() > 2) {
+				pstmt = con.prepareStatement(sql);
+				pstmt.setString(1, map.get("tb_itId"));
+				rs = pstmt.executeQuery();
+				if(rs.next()) {  
+					itId = rs.getString("it_id");
+				}
+			}else { 
+				pstmt = con.prepareStatement(sql4);
+				rs = pstmt.executeQuery();
+				if(rs.next()) {
+					itId = rs.getString("num");
+					kuku=1;
+				}
+			}
+			//factory.close(con, pstmt, rs);
+			
+			if(kuku != 1) {
+//			if((itId != null) && (itId.trim().length() > 0)) { 
+				System.out.println("itId 갱신");
+				//con = factory.getConnection();
+				pstmt = con.prepareStatement(sql2);
+				pstmt.setString(1, map.get("tb_itName"));
+				pstmt.setString(2, map.get("tb_itCode"));
+				pstmt.setInt(3, Integer.parseInt(map.get("tb_itPrice")));
+				pstmt.setInt(4, Integer.parseInt(map.get("tb_itAcquisition")));
+				pstmt.setInt(5, Integer.parseInt(map.get("tb_itPeriod")));
+				pstmt.setString(6, map.get("tb_itManufacturer"));
+				pstmt.setString(7, map.get("tb_itContent"));
+				pstmt.setString(8, map.get("tb_itImage"));
+				pstmt.setString(9, map.get("tb_itId"));
+				kuku = 2;
+			} else {
+				System.out.println("itId 삽입");
+				//con = factory.getConnection();
+				pstmt = con.prepareStatement(sql3);
+				pstmt.setString(1, itId);
+				pstmt.setString(2, map.get("tb_itName"));
+				pstmt.setString(3, map.get("tb_itCode"));
+				pstmt.setInt(4, Integer.parseInt(map.get("tb_itPrice")));
+				pstmt.setInt(5, Integer.parseInt(map.get("tb_itAcquisition")));
+				pstmt.setInt(6, Integer.parseInt(map.get("tb_itPeriod")));
+				pstmt.setString(7, map.get("tb_itManufacturer"));
+				pstmt.setString(8, map.get("tb_itContent"));
+				pstmt.setString(9, map.get("tb_itImage"));
+				if (pstmt.executeUpdate() == 1) {
+					System.out.println("자산자산자산갱신");
+					String sql5 = "update product set it_id =? where pr_id = ?";
+					pstmt = con.prepareStatement(sql5);
+					pstmt.setString(1, itId);
+					pstmt.setString(2, map.get("tb_prId"));
+					kuku=3;
+				} else {
+					return 0;
+				}
+			}
 			result = pstmt.executeUpdate();
 		} catch (SQLException e) {
-			System.out.println("insertProductInsertIt SQL Error");
+			System.out.println("updateProductInsertIt SQL Error");
 			e.printStackTrace();
 		} finally {
 			factory.close(con, pstmt);
 		}
 		return result;
 	}
+//	if(itId.trim().length() > 0) {
+////			if((itId != null) && (itId.trim().length() > 0)) { 
+//		System.out.println("itId 갱신");
+//		//con = factory.getConnection();
+//		pstmt = con.prepareStatement(sql2);
+//		pstmt.setString(1, map.get("tb_itName"));
+//		pstmt.setString(2, map.get("tb_itCode"));
+//		pstmt.setInt(3, Integer.parseInt(map.get("tb_itPrice")));
+//		pstmt.setInt(4, Integer.parseInt(map.get("tb_itAcquisition")));
+//		pstmt.setInt(5, Integer.parseInt(map.get("tb_itPeriod")));
+//		pstmt.setString(6, map.get("tb_itManufacturer"));
+//		pstmt.setString(7, map.get("tb_itContent"));
+//		pstmt.setString(8, map.get("tb_itImage"));
+//		pstmt.setString(9, map.get("tb_itId"));
+//		kuku = 2;
+//	} else {
+//		System.out.println("itId 삽입");
+//		//con = factory.getConnection();
+//		pstmt = con.prepareStatement(sql3);
+//		pstmt.setString(1, itId);
+//		pstmt.setString(2, map.get("tb_itName"));
+//		pstmt.setString(3, map.get("tb_itCode"));
+//		pstmt.setInt(4, Integer.parseInt(map.get("tb_itPrice")));
+//		pstmt.setInt(5, Integer.parseInt(map.get("tb_itAcquisition")));
+//		pstmt.setInt(6, Integer.parseInt(map.get("tb_itPeriod")));
+//		pstmt.setString(7, map.get("tb_itManufacturer"));
+//		pstmt.setString(8, map.get("tb_itContent"));
+//		pstmt.setString(9, map.get("tb_itImage"));
+//		String sql5 = "update product set it_id =? where pr_id = ?";
+//		pstmt.setString(1, itId);
+//		pstmt.setString(2, map.get("tb_prId"));
+//		int re = pstmt.executeUpdate();
+//		System.out.println(re);
+//		kuku=3;
+//	}
+//	result = pstmt.executeUpdate();
+//	System.out.println(result + "  : "+kuku+" : aaaaaaaaaaa");
+//} catch (SQLException e) {
+//	System.out.println("updateProductInsertIt SQL Error");
+//	e.printStackTrace();
+//} finally {
+//	factory.close(con, pstmt);
+//}
+//return result;
+//}
 	
-	@Override
-	public int updateInput(Map<String, String> map) {
-		Connection con = null;
-		PreparedStatement pstmt = null;
-		String sql = "update input set in_complete ='Y' where pr_id = ?";
-		int result = 0;
-		try {
-			con = factory.getConnection();
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, map.get("tb_prId"));
-			result = pstmt.executeUpdate();
-		} catch (SQLException e) {
-			System.out.println("updateInput SQL Error");
-			e.printStackTrace();
-		} finally {
-			factory.close(con, pstmt);
-		}
-		return result;
-	}
+//	public int updtaePrItId(String itId) {
+//		Connection con = null;
+//		PreparedStatement pstmt = null;
+//		String sql = "update product set it_id = ? where pr_id = ?";
+//	}
+	
+//	@Override
+//	public int updateInput(Map<String, String> map) {
+//		Connection con = null;
+//		PreparedStatement pstmt = null;
+//		String sql = "update input set in_complete ='Y' where pr_id = ?";
+//		int result = 0;
+//		try {
+//			con = factory.getConnection();
+//			pstmt = con.prepareStatement(sql);
+//			pstmt.setString(1, map.get("tb_prId"));
+//			result = pstmt.executeUpdate();
+//		} catch (SQLException e) {
+//			System.out.println("updateInput SQL Error");
+//			e.printStackTrace();
+//		} finally {
+//			factory.close(con, pstmt);
+//		}
+//		return result;
+//	}
 	
 	/* ======================================== by 김재림 ================================================= */
 	/**
@@ -637,18 +785,17 @@ public class AssetDaoImpl implements AssetDao {
 	 * @param assetId 렌탈출고할 자산
 	 * @return 
 	 */
-	public int updateAssetState(String assetState, String assetId) {
+	public int updateAssetState(String assetState, String productId) {
 		int returnValue = -1;
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		String sql ="update product set pr_state = ? where pr_id = ?";
-		
 		try {
 			con = factory.getConnection();
 			pstmt = con.prepareStatement(sql);
 			pstmt.setString(1, assetState);
-			pstmt.setString(2, assetId);
-			returnValue = pstmt.executeUpdate();	
+			pstmt.setString(2, productId);
+			returnValue = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
@@ -659,10 +806,10 @@ public class AssetDaoImpl implements AssetDao {
 
 	public List<Map<String, String>> selectAssetList(String assetState, String itemId) {
 		List<Map<String, String>> returnValue = new ArrayList<>();
-		/*Connection con = null;
+		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
-		String sql = "select * from 테이블명 where 상태값 = ? and 품목코드 = ?";
+		String sql = "select a.*, to_char(b.IT_ACQUISITION, '999,999,999,990') price from product a, item b where a.it_id = b.it_id and pr_state = ? and a.it_id = ?";
 		
 		try {
 			con = factory.getConnection();
@@ -672,11 +819,11 @@ public class AssetDaoImpl implements AssetDao {
 			rs = pstmt.executeQuery();
 			while (rs.next()) {
 				Map<String, String> item = new HashMap<>();
-				item.put("id", rs.getString("id"));
-				item.put("name", rs.getString("name"));
-				item.put("entrydate", rs.getString("entrydate"));
-				item.put("recentdate", rs.getString("recentdate"));
-				item.put("unstorecount", rs.getString("unstorecount"));
+				item.put("id", rs.getString("pr_id"));
+				item.put("name", rs.getString("it_name"));
+				item.put("entrydate", rs.getString("pr_in_day"));
+				item.put("recentdate", rs.getString("pr_out_day"));
+				item.put("unstorecount", rs.getString("pr_count"));
 				item.put("price", rs.getString("price"));
 				returnValue.add(item);
 			}
@@ -684,31 +831,17 @@ public class AssetDaoImpl implements AssetDao {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				factory.close(pstmt, con);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		}*/
-		for (int i = 0; i < 9; i++) {
-			Map<String, String> item = new HashMap<>();
-			item.put("id", itemId+i);
-			item.put("name", "믹서기"+i);
-			item.put("entrydate", "2017-01-1"+i);
-			item.put("recentdate", "2016-01-1"+i);
-			item.put("unstorecount", 2 * i + "");
-			item.put("price", "75000");
-			returnValue.add(item);
+			factory.close(con, pstmt, rs);
 		}
 		return returnValue;
 	}
 
 	public List<Map<String, String>> selectRequestAssetList(String assetState) {
 		List<Map<String, String>> returnValue = new ArrayList<>();
-		/*Connection con = null;
+		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
-		String sql = "select * from 테이블명 where 상태값 = ?;
+		String sql = "select ou_id, pr_id, it_id, ou_count, to_char(ou_out_day, 'yyyy-MM-dd') req_day from output where ou_complete = 'N' and pr_id is not null and ou_state = ? order by req_day";
 		
 		try {
 			con = factory.getConnection();
@@ -717,51 +850,29 @@ public class AssetDaoImpl implements AssetDao {
 			rs = pstmt.executeQuery();
 			while (rs.next()) {
 				Map<String, String> item = new HashMap<>();
-				item.put("id", rs.getString("id"));
-				item.put("name", rs.getString("name"));
-				item.put("entrydate", rs.getString("entrydate"));
-				item.put("recentdate", rs.getString("recentdate"));
-				item.put("unstorecount", rs.getString("unstorecount"));
-				item.put("price", rs.getString("price"));
+				item.put("requestId", rs.getString("ou_id"));
+				item.put("productId", rs.getString("pr_id"));
+				item.put("itemId", rs.getString("it_id"));
+				item.put("assetState", assetState);
+				item.put("amount", rs.getString("ou_count"));
+				item.put("requestDay", rs.getString("req_day"));
 				returnValue.add(item);
 			}
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				factory.close(pstmt, con);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		}*/
-		for (int i = 1; i < 30; i++) {
-			Map<String, String> item = new HashMap<>();
-			item.put("id", "A0132456"+i);
-			item.put("name", assetState + i);
-			if (i > 10) {
-				item.put("entrydate", "2017-01-0"+i);
-				item.put("recentdate", "2016-01-0"+i);
-			} else if (i >= 31) {
-				item.put("entrydate", "2017-01-"+i);
-				item.put("recentdate", "2016-01-"+i);
-			} else {
-				item.put("entrydate", "2017-02-"+(i-31));
-				item.put("recentdate", "2016-02-"+(i-31));
-			}
-			item.put("unstorecount", 2 * i + "");
-			item.put("price", "2,500,000");
-			returnValue.add(item);
+			factory.close(con, pstmt, rs);
 		}
 		return returnValue;
 	}
 
 	public List<Map<String, String>> selectRequestSearchAssetList(String assetState, String keyword) {
-		List<Map<String, String>> returnValue = new ArrayList<>();
-		/*Connection con = null;
+		/*List<Map<String, String>> returnValue = new ArrayList<>();
+		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
-		*/
+		
 		String sql = 
 				"select b.자산id id, b.품목이름 name, b.구매일 entrydate, b.상태변경일 recentdate, b.출고횟수 unstorecount, b.가격 price "
 				+ "from ("
@@ -770,7 +881,7 @@ public class AssetDaoImpl implements AssetDao {
 				+ ") a, 테이블 b "
 				+ "where a.search_field regex_like(?) and a.id = b.id order by recentdate";
 		System.out.println("sql = "+sql);
-		/*
+		
 		try {
 			con = factory.getConnection();
 			pstmt = con.prepareStatement(sql);
@@ -791,38 +902,86 @@ public class AssetDaoImpl implements AssetDao {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			try {
-				factory.close(pstmt, con);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			factory.close(con, pstmt, rs);
 		}*/
-		for (int i = 0; i < 80; ++i) {
-			Map<String, String> item = new HashMap<>();
-			item.put("id", "A0132456"+i);
-			item.put("name", "정수기" + i);
-			if (i > 10) {
-				item.put("entrydate", "2017-01-0"+i);
-				item.put("recentdate", "2016-01-0"+i);
-			} else if (i >= 31) {
-				item.put("entrydate", "2017-01-"+i);
-				item.put("recentdate", "2016-01-"+i);
-			} else {
-				item.put("entrydate", "2017-02-"+(i-31));
-				item.put("recentdate", "2016-02-"+(i-31));
+		return null;
+	}
+
+	public int updateAssetRentalOut(Map<String, String> info) {
+		int returnValue = -1;
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		String sql1 = "update product set pr_state = ? where pr_id = ?";
+		String sql2 = "update output set pr_id = ? where ou_id = ?";
+		try {
+			con = factory.getConnection();
+			pstmt = con.prepareStatement(sql1);
+			pstmt.setString(1, "re_output");
+			pstmt.setString(2, info.get("id"));
+			int result = pstmt.executeUpdate();
+			
+			if (result != 1) {
+				return 0;
 			}
-			item.put("unstorecount", 2 * i + "");
-			item.put("price", "2,500,000");
-			returnValue.add(item);
+			
+			pstmt.clearParameters();
+			pstmt = con.prepareStatement(sql2);
+			pstmt.setString(1, info.get("id"));
+			pstmt.setString(2, info.get("requestId"));
+			returnValue = pstmt.executeUpdate();
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			factory.close(con, pstmt);
 		}
 		return returnValue;
 	}
+
+	public int updateUnstore(Map<String, String> info) {
+		int returnValue = -1;
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		String sql1 = "update product set pr_state = ? where pr_id = ?";
+		String sql2 = "update output set ou_complete = 'Y', ou_day=SYSTIMESTAMP where ou_id = ?";
+		String assetState = null;
+		switch (info.get("assetState")) {
+		case "re_output":
+			assetState = "do_product";
+			break;
+		case "re_exoutput":
+			assetState = "do_exoutput";
+			break;
+		case "re_disuse":
+			assetState = "do_disuse";
+		}
+		try {
+			con = factory.getConnection();
+			pstmt = con.prepareStatement(sql1);
+			pstmt.setString(1, assetState);
+			pstmt.setString(2, info.get("productId"));
+			int result = pstmt.executeUpdate();
+			if(result == 0) {
+				return 0;
+			}
+			pstmt.clearParameters();
+			pstmt = con.prepareStatement(sql2);
+			pstmt.setString(1, info.get("requestId"));
+			returnValue = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			factory.close(con, pstmt);
+		}
+		return returnValue;
+	}
+
 	
 	/* ======================================== by 이민정 ================================================= */
 	/**
-	 * 요청자산 조회
-	 * @param assetState
-	 * @return
+	 * 입고요청 자산 조회
+	 * @param assetState 입고요청 자산상태
+	 * @return 
 	 */
 	public List<Map<String, String>> selectInputRequest(String assetState){ 
 		Connection con = null;
@@ -853,6 +1012,62 @@ public class AssetDaoImpl implements AssetDao {
 		return list;
 	}
 	
+	@Override
+	public int insertProduct() {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		String prId = "";
+		String sql1 = "SELECT to_char(SEQ_PR_ID.currval,'0000000000') AS \"pr_id\" FROM dual";
+		String sql2 = "INSERT INTO product (pr_id, pr_first_day, pr_state, pr_count) VALUES (?,systimestamp,'wa_ninput',1)";
+		try {
+			con = factory.getConnection();
+			pstmt = con.prepareStatement(sql1);
+			rs = pstmt.executeQuery();
+			if(rs.next()) {
+				prId = rs.getString("pr_id");
+				//pstmt.close();
+				pstmt = con.prepareStatement(sql2);
+				pstmt.setString(1, "PR"+prId);
+				return pstmt.executeUpdate();
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			factory.close(con, pstmt,rs);
+		}
+		return 0;
+	}
+	
+	@Override
+	public int updateProduct(String inputId, String assetState) {
+		Connection con = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		String prId = "";
+		String sql1 = "SELECT pr_id FROM product WHERE in_id=?";
+		String sql2 = "UPDATE product SET pr_state=? WHERE pr_id=?";
+		try {
+			con = factory.getConnection();
+			pstmt = con.prepareStatement(sql1);
+			pstmt.setString(1, inputId);
+			rs = pstmt.executeQuery();
+			if(rs.next()) {
+				prId = rs.getString("pr_id");
+				pstmt.close();
+				pstmt = con.prepareStatement(sql2);
+				pstmt.setString(1, assetState);
+				pstmt.setString(2, prId);
+				return pstmt.executeUpdate();
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			factory.close(con, pstmt, rs);
+		}
+		return 0;
+	}
+	
 	/**
 	 * 입고요청 등록
 	 * @param inputId
@@ -860,7 +1075,6 @@ public class AssetDaoImpl implements AssetDao {
 	 * @return
 	 */
 	public int updateInputState(String inputId, String assetState){ 
-		System.out.println(inputId+" "+assetState);
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
@@ -876,8 +1090,41 @@ public class AssetDaoImpl implements AssetDao {
 			con = factory.getConnection();
 			pstmt = con.prepareStatement(sql);
 			pstmt.setString(1, inputId);
-			return pstmt.executeUpdate();
-			
+			int result = pstmt.executeUpdate();
+			if (result == 1) {
+				if(assetState.equals("re_ninput")) {
+					//insertProduct();
+					String prId = "";
+					String sql11 = "SELECT trim(to_char(SEQ_PR_ID.currval,'0000000000')) AS \"pr_id\" FROM dual";
+					String sql22 = "INSERT INTO product (pr_id, pr_first_day, pr_state, pr_count) VALUES (?,systimestamp,'wa_ninput',1)";
+						pstmt = con.prepareStatement(sql11);
+						rs = pstmt.executeQuery();
+						if(rs.next()) {
+							prId = rs.getString("pr_id");
+							//pstmt.close();
+							pstmt = con.prepareStatement(sql22);
+							pstmt.setString(1, "PR"+prId);
+							return pstmt.executeUpdate();
+						}
+				} else {
+//					updateProduct(inputId, assetState);
+					String prId = "";
+		               String sql111 = "SELECT pr_id FROM product WHERE in_id=?";
+		               String sql222 = "UPDATE product SET pr_state=? WHERE pr_id=?";
+		               pstmt = con.prepareStatement(sql111);
+		               pstmt.setString(1, inputId);
+		               rs = pstmt.executeQuery();
+		               if(rs.next()) {
+		                  prId = rs.getString("pr_id");
+		                  pstmt.close();
+		                  pstmt = con.prepareStatement(sql222);
+		                  pstmt.setString(1, assetState);
+		                  pstmt.setString(2, prId);
+		                  return pstmt.executeUpdate();
+		               }
+				}
+			}
+			//return 1;
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
@@ -886,42 +1133,42 @@ public class AssetDaoImpl implements AssetDao {
 		return 0;
 	}
 	
-	/**
-	 * 요청자산 검색 조회
-	 * @param state
-	 * @param name
-	 * @return
-	 */
-	public List<Map<String, String>> selectInputRequest(String assetState, String productName){ 
-		Connection con = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		String sql = "select i.in_id, i.it_id, i.in_state, i.in_count, to_char(i.in_day, 'yyyy-MM-dd') IN_DAY, i.in_delivery from (select in_id, in_id||' '||it_id||' '||in_count||' '||in_day||' '||in_delivery||' '||in_state combination from input) c, input i where c.in_id = i.in_id and i.in_state = ? and regexp_like(c.combination, ?)";
-		List<Map<String, String>> list = new ArrayList<>();
-		
-		try {
-			con = factory.getConnection();
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, assetState);
-			pstmt.setString(2, productName);
-			rs = pstmt.executeQuery();
-			while(rs.next()) {
-				Map<String, String> map = new HashMap<>();
-				map.put("id", rs.getString("IN_ID"));
-				map.put("name", rs.getString("IT_ID"));
-				map.put("count", rs.getString("IN_COUNT"));
-				map.put("state", rs.getString("IN_STATE"));
-				map.put("date", rs.getString("IN_DAY"));
-				map.put("delivery", rs.getString("IN_DELIVERY"));
-				list.add(map);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}finally {
-			factory.close(con, pstmt, rs);
-		}
-		return list;
-	}
+		/**
+	    * 요청자산 검색 조회
+	    * @param state
+	    * @param name
+	    * @return
+	    */
+	   public List<Map<String, String>> selectInputRequest(String assetState, String productName){ 
+	      Connection con = null;
+	      PreparedStatement pstmt = null;
+	      ResultSet rs = null;
+	      String sql = "select i.in_id, i.it_id, i.in_state, i.in_count, to_char(i.in_day, 'yyyy-MM-dd') IN_DAY, i.in_delivery from (select in_id, in_id||' '||it_id||' '||in_count||' '||in_day||' '||in_delivery||' '||in_state combination from input) c, input i where c.in_id = i.in_id and i.in_state = ? and regexp_like(c.combination, ?)";
+	      List<Map<String, String>> list = new ArrayList<>();
+	      
+	      try {
+	         con = factory.getConnection();
+	         pstmt = con.prepareStatement(sql);
+	         pstmt.setString(1, assetState);
+	         pstmt.setString(2, productName);
+	         rs = pstmt.executeQuery();
+	         while(rs.next()) {
+	            Map<String, String> map = new HashMap<>();
+	            map.put("id", rs.getString("IN_ID"));
+	            map.put("name", rs.getString("IT_ID"));
+	            map.put("count", rs.getString("IN_COUNT"));
+	            map.put("state", rs.getString("IN_STATE"));
+	            map.put("date", rs.getString("IN_DAY"));
+	            map.put("delivery", rs.getString("IN_DELIVERY"));
+	            list.add(map);
+	         }
+	      } catch (SQLException e) {
+	         e.printStackTrace();
+	      }finally {
+	         factory.close(con, pstmt, rs);
+	      }
+	      return list;
+	   }
 	
 	/**
 	 * 입고조회
@@ -994,7 +1241,7 @@ public class AssetDaoImpl implements AssetDao {
 	}
 	
 	/**
-	 * 점검대기 리스트 출력
+	 * 점검대기 조회
 	 * @return
 	 */
 	public ArrayList<Product> selectRepairList(){
@@ -1091,7 +1338,6 @@ public class AssetDaoImpl implements AssetDao {
 	 * @return
 	 */
 	public Map<String, String> selectRepairForm(String productId, String productState) {
-		System.out.println("결과 "+productState);
 		Map<String, String> returnValue = new HashMap<>();
 		StringBuilder tempSql = new StringBuilder();
 		Connection con = null;
@@ -1132,7 +1378,6 @@ public class AssetDaoImpl implements AssetDao {
 		} finally {
 			factory.close(con, pstmt, rs);
 		}
-		System.out.println("결과  "+returnValue);
 		return returnValue;
 	}
 	
@@ -1166,143 +1411,129 @@ public class AssetDaoImpl implements AssetDao {
 		}
 		return list;
 	}
-	
-	/**
-	 * 내부수리기사 점검 후 점검테이블에 점검내역 등록
-	 * @param itName
-	 * @param productId
-	 * @param engineerId
-	 * @param engineerName
-	 * @param repairSort
-	 * @param repairContent
-	 * @return
-	 */
-	public int insertRepairResult(Map<String, Object> formInput, Map<String, String> partsInput) {
-		
-		
-		int returnValue = -1;
-		Connection con = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		RempUtility ru = new RempUtility();
-		StringBuilder temp = new StringBuilder();
-		String repairSort = null;
-		
-		String selectSql ="select SEQ_RE_ID.nextval seq from dual";
-		String insertSql ="insert into repair values(?,?,?,?,?,?,?,SYSTIMESTAMP,?)";
-		String insertPartSql = "insert into use_parts values(?,?,?)";
-		String updatePartSql = "update parts set PA_TOTAL = PA_TOTAL - to_number(?) where PA_ID = ?";
-		String insertOutputsql = "INSERT INTO output (ou_id, pr_id, it_id, ou_state, ou_out_day, ou_count, ou_complete) VALUES ('ou'||trim(to_char(output_seq.nextval,'0000000000')),?, (select it_id from product where pr_id=?),?,systimestamp,?,?)";
-		String updateProductSql ="update product set PR_STATE=? where PR_ID =?";
-		
-		switch (formInput.get("repairSort").toString()) {
-		case "wa_product":
-			repairSort = "내부수리완료";
-			break;
-		case "wa_repair":
-			repairSort = "수리대기";
-			break;
-		case "re_exoutput":
-			repairSort = "외부수리";
-			break;
-		case "re_disuse":
-			repairSort = "수리불가능";
-		}
-		try {
-			//시퀸스 얻어오기
-			con = factory.getConnection();
-			pstmt = con.prepareStatement(selectSql);
-			rs = pstmt.executeQuery();
-			String repairId = null;
-			if(rs.next()) {
-				repairId = ru.getIdString("RE", rs.getInt("seq"), 12);
-			} else {
-				return -1;
-			}
-			returnValue += 2;
-			//점검결과 등록
-			System.out.println(formInput.get("repairSort").toString());
-			pstmt.clearParameters();
-			pstmt = con.prepareStatement(insertSql);
-			pstmt.setString(1, repairId);
-			pstmt.setString(2, formInput.get("itName").toString());
-			pstmt.setString(3, formInput.get("productId").toString());
-			pstmt.setString(4, formInput.get("engineerId").toString());
-			pstmt.setString(5, formInput.get("engineerName").toString());
-			pstmt.setString(6, repairSort);
-			pstmt.setString(7, formInput.get("repairSort").toString());
-			pstmt.setString(8, formInput.get("repairContent").toString());
-			int insertResult = pstmt.executeUpdate();
-			if (insertResult == 0) {
-				return -1;
-			}
-			returnValue += 1;
-			//자산테이블 변경
-			pstmt.clearParameters();
-			pstmt = con.prepareStatement(updateProductSql);
-			pstmt.setString(1, formInput.get("repairSort").toString());
-			pstmt.setString(2, formInput.get("productId").toString());
-			int updateProductResult = pstmt.executeUpdate();
-			if(updateProductResult == 0) {
-				return -1;
-			}
-			returnValue += 1;
-			
-			if(repairSort.equals("외부수리")) {
-			//출고 등록
-			pstmt.clearParameters();
-			pstmt = con.prepareStatement(insertOutputsql);
-			pstmt.setString(1, formInput.get("productId").toString());
-			pstmt.setString(2, formInput.get("productId").toString());
-	        pstmt.setString(3, "re_exoutput");
-	        pstmt.setInt(4, Integer.parseInt("1"));
-	        pstmt.setString(5, "N");
-	        int insertOutputResult = pstmt.executeUpdate();
-	        returnValue += 1;
-			}
-			if(repairSort.equals("내부수리완료")){
-				//사용부품 등록
-				if(partsInput != null) {
-				pstmt.clearParameters();
-				pstmt = con.prepareStatement(insertPartSql);
-				Set<String> keys = partsInput.keySet();
-				Iterator<String> iter = keys.iterator();
-				while(iter.hasNext()) {
-					StringBuilder temp2 = new StringBuilder(iter.next());
-					pstmt.setString(1, repairId);
-					pstmt.setString(2, temp2.toString());
-					pstmt.setString(3, partsInput.get(temp2.toString()));
-					pstmt.addBatch();
-				}
-				int[] partsInsertResult = pstmt.executeBatch();
-				returnValue += 1;
-				
-				//부품테이블 수량 업데이트
-				pstmt.clearParameters();
-				pstmt = con.prepareStatement(updatePartSql);
-				Set<String> keys2 = partsInput.keySet();
-				Iterator<String> iter2 = keys2.iterator();
-				while(iter2.hasNext()) {
-					StringBuilder temp2 = new StringBuilder(iter2.next());
-					pstmt.setString(1, partsInput.get(temp2.toString()));
-					pstmt.setString(2, temp2.toString());
-					pstmt.addBatch();
-				}
-				int[] partsUpdateResult = pstmt.executeBatch();
-				returnValue += 1;
-				}
-			}
 
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			factory.close(con, pstmt, rs);
-		}
-		if (returnValue < 3 || returnValue > 6) {
-			returnValue = -1;
-		}
-		return returnValue;
-	}
+   public int insertRepairResult(Map<String, Object> formInput, Map<String, String> partsInput) {
+      int returnValue = -1;
+      Connection con = null;
+      PreparedStatement pstmt = null;
+      ResultSet rs = null;
+      RempUtility ru = new RempUtility();
+      StringBuilder temp = new StringBuilder();
+      String repairSort = null;
+      String selectSql ="select SEQ_RE_ID.nextval seq from dual";
+      String insertSql ="insert into repair values(?,?,?,?,?,?,?,SYSTIMESTAMP,?)";
+      String insertPartSql = "insert into use_parts values(?,?,?)";
+      String updatePartSql = "update parts set PA_TOTAL = PA_TOTAL - to_number(?) where PA_ID = ?";
+      String insertOutputsql = "INSERT INTO output (ou_id, pr_id, it_id, ou_state, ou_out_day, ou_count, ou_complete) VALUES ('ou'||trim(to_char(output_seq.nextval,'0000000000')),?, (select it_id from product where pr_id=?),?,systimestamp,?,?)";
+      String updateProductSql ="update product set PR_STATE=? where PR_ID =?";
+      
+      switch (formInput.get("repairSort").toString()) {
+      case "wa_product":
+         repairSort = "내부수리완료";
+         break;
+      case "wa_repair":
+         repairSort = "수리대기";
+         break;
+      case "re_exoutput":
+         repairSort = "외부수리";
+         break;
+      case "re_disuse":
+         repairSort = "수리불가능";
+      }
+      try {
+         //시퀸스 얻어오기
+         con = factory.getConnection();
+         pstmt = con.prepareStatement(selectSql);
+         rs = pstmt.executeQuery();
+         String repairId = null;
+         if(rs.next()) {
+            repairId = ru.getIdString("RE", rs.getInt("seq"), 12);
+         } else {
+            return -1;
+         }
+         returnValue += 2;
+         //점검결과 등록
+         System.out.println(formInput.get("repairSort").toString());
+         pstmt.clearParameters();
+         pstmt = con.prepareStatement(insertSql);
+         pstmt.setString(1, repairId);
+         pstmt.setString(2, formInput.get("itName").toString());
+         pstmt.setString(3, formInput.get("productId").toString());
+         pstmt.setString(4, formInput.get("engineerId").toString());
+         pstmt.setString(5, formInput.get("engineerName").toString());
+         pstmt.setString(6, repairSort);
+         pstmt.setString(7, formInput.get("repairSort").toString());
+         pstmt.setString(8, formInput.get("repairContent").toString());
+         int insertResult = pstmt.executeUpdate();
+         if (insertResult == 0) {
+            return -1;
+         }
+         returnValue += 1;
+         //자산테이블 변경
+         pstmt.clearParameters();
+         pstmt = con.prepareStatement(updateProductSql);
+         pstmt.setString(1, formInput.get("repairSort").toString());
+         pstmt.setString(2, formInput.get("productId").toString());
+         int updateProductResult = pstmt.executeUpdate();
+         if(updateProductResult == 0) {
+            return -1;
+         }
+         returnValue += 1;
+         
+         if(repairSort.equals("외부수리")) {
+         //출고 등록
+         pstmt.clearParameters();
+         pstmt = con.prepareStatement(insertOutputsql);
+         pstmt.setString(1, formInput.get("productId").toString());
+         pstmt.setString(2, formInput.get("productId").toString());
+           pstmt.setString(3, "re_exoutput");
+           pstmt.setInt(4, Integer.parseInt("1"));
+           pstmt.setString(5, "N");
+           int insertOutputResult = pstmt.executeUpdate();
+           returnValue += 1;
+         }
+         if(repairSort.equals("내부수리완료")){
+            //사용부품 등록
+            if(partsInput != null) {
+            pstmt.clearParameters();
+            pstmt = con.prepareStatement(insertPartSql);
+            Set<String> keys = partsInput.keySet();
+            Iterator<String> iter = keys.iterator();
+            while(iter.hasNext()) {
+               StringBuilder temp2 = new StringBuilder(iter.next());
+               pstmt.setString(1, repairId);
+               pstmt.setString(2, temp2.toString());
+               pstmt.setString(3, partsInput.get(temp2.toString()));
+               pstmt.addBatch();
+            }
+            int[] partsInsertResult = pstmt.executeBatch();
+            returnValue += 1;
+            
+            //부품테이블 수량 업데이트
+            pstmt.clearParameters();
+            pstmt = con.prepareStatement(updatePartSql);
+            Set<String> keys2 = partsInput.keySet();
+            Iterator<String> iter2 = keys2.iterator();
+            while(iter2.hasNext()) {
+               StringBuilder temp2 = new StringBuilder(iter2.next());
+               pstmt.setString(1, partsInput.get(temp2.toString()));
+               pstmt.setString(2, temp2.toString());
+               pstmt.addBatch();
+            }
+            int[] partsUpdateResult = pstmt.executeBatch();
+            returnValue += 1;
+            }
+         }
+      } catch (SQLException e) {
+         e.printStackTrace();
+      } finally {
+         factory.close(con, pstmt, rs);
+      }
+      if (returnValue < 3 || returnValue > 6) {
+         returnValue = -1;
+      }
+      return returnValue;
+   }
 	
 	/**
 	 * 내부수리기사 점검 후 자산테이블에 자산상태 변경
@@ -1501,6 +1732,7 @@ public class AssetDaoImpl implements AssetDao {
 					"from (select pa_id, pa_id||' '||pa_search||' '||it_id||' '||pa_manufacturer||' '||pa_model combination from parts) c, parts p\r\n" + 
 					"where c.pa_id = p.pa_id and c.combination like ?";
 		}
+		
 		try {
 			con = factory.getConnection();
 			pstmt = con.prepareStatement(sql);
@@ -1525,58 +1757,59 @@ public class AssetDaoImpl implements AssetDao {
 		return list;
 	}
 	
-	/**
-	 * 내부수리기사 점검내역 검색조회
-	 * @param engineerId
-	 * @param startDate
-	 * @param endDate
-	 * @param repairSort
-	 * @return
-	 */
-	public List<Map<String, String>> selectRepairResult(String engineerId, String startDate, String endDate, String repairSort){
-		Connection con = null;
-		PreparedStatement pstmt = null;
-		String sql ="";
-		ResultSet rs = null;
-		List<Map<String, String>> list = new ArrayList<>();
-		if(repairSort.equals("wa_repair")) {
-			sql = "select RE_ID, IT_NAME, PR_ID, RE_ENGINEER_ID, RE_ENGINEER_NAME, RE_SORT, RE_STATE, RE_DAY, RE_CONTENT from repair where to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') >= to_date(?,'yyyy/MM/dd') and to_date(to_char(RE_DAY,'yyyy/MM/dd'), 'yyyy/MM/dd') <= to_date(?,'yyyy/MM/dd') and RE_STATE ='wa_repair' and RE_ENGINEER_ID = ?";
-		}else if(repairSort.equals("wa_product")) {
-			sql = "select RE_ID, IT_NAME, PR_ID, RE_ENGINEER_ID, RE_ENGINEER_NAME, RE_SORT, RE_STATE, RE_DAY, RE_CONTENT from repair where to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') >= to_date(?,'yyyy/MM/dd') and to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') <= to_date(?,'yyyy/MM/dd') and RE_STATE ='wa_product' and RE_ENGINEER_ID = ?";
-		}else if(repairSort.equals("re_exoutput")) {
-			sql = "select RE_ID, IT_NAME, PR_ID, RE_ENGINEER_ID, RE_ENGINEER_NAME, RE_SORT, RE_STATE, RE_DAY, RE_CONTENT from repair where to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') >= to_date(?,'yyyy/MM/dd') and to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') <= to_date(?,'yyyy/MM/dd') and RE_STATE ='re_exoutput' and RE_ENGINEER_ID = ?"; 
-		}else if(repairSort.equals("re_disuse")) {
-			sql = "select RE_ID, IT_NAME, PR_ID, RE_ENGINEER_ID, RE_ENGINEER_NAME, RE_SORT, RE_STATE, RE_DAY, RE_CONTENT from repair where to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') >= to_date(?,'yyyy/MM/dd') and to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') <= to_date(?,'yyyy/MM/dd') and RE_STATE ='re_disuse' and RE_ENGINEER_ID = ?";
-		}else if(repairSort.equals("all")) {
-			sql = "select RE_ID, IT_NAME, PR_ID, RE_ENGINEER_ID, RE_ENGINEER_NAME, RE_SORT, RE_STATE, RE_DAY, RE_CONTENT from repair where to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') >= to_date(?,'yyyy/MM/dd') and to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') <= to_date(?,'yyyy/MM/dd') and RE_ENGINEER_ID = ?";
-		}
-		try {
-			con = factory.getConnection();
-			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, startDate);
-			pstmt.setString(2, endDate);
-			pstmt.setString(3, engineerId);
-			rs = pstmt.executeQuery();
-			while(rs.next()) {
-				Map<String, String> map = new HashMap<>();
-				map.put("repairId", rs.getString("RE_ID"));
-				map.put("itemName", rs.getString("IT_NAME"));
-				map.put("productId", rs.getString("PR_ID"));
-				map.put("engineerId", rs.getString("RE_ENGINEER_ID"));
-				map.put("engineerName", rs.getString("RE_ENGINEER_NAME"));
-				map.put("repairSort", rs.getString("RE_SORT"));
-				map.put("repairState", rs.getString("RE_STATE"));
-				map.put("repairDate", rs.getString("RE_DAY"));
-				map.put("repairContent", rs.getString("RE_CONTENT"));
-				list.add(map);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}finally {
-			factory.close(con, pstmt, rs);
-		}
-		return list;
-	}
+		/**
+	    * 내부수리기사 점검내역 검색조회
+	    * @param engineerId
+	    * @param startDate
+	    * @param endDate
+	    * @param repairSort
+	    * @return
+	    */
+	   public List<Map<String, String>> selectRepairResult(String engineerId, String startDate, String endDate, String repairSort){
+	      Connection con = null;
+	      PreparedStatement pstmt = null;
+	      String sql ="";
+	      ResultSet rs = null;
+	      List<Map<String, String>> list = new ArrayList<>();
+	      if(repairSort.equals("wa_repair")) {
+	         sql = "select RE_ID, IT_NAME, PR_ID, RE_ENGINEER_ID, RE_ENGINEER_NAME, RE_SORT, RE_STATE, RE_DAY, RE_CONTENT from repair where to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') >= to_date(?,'yyyy/MM/dd') and to_date(to_char(RE_DAY,'yyyy/MM/dd'), 'yyyy/MM/dd') <= to_date(?,'yyyy/MM/dd') and RE_STATE ='wa_repair' and RE_ENGINEER_ID = ?";
+	      }else if(repairSort.equals("wa_product")) {
+	         sql = "select RE_ID, IT_NAME, PR_ID, RE_ENGINEER_ID, RE_ENGINEER_NAME, RE_SORT, RE_STATE, RE_DAY, RE_CONTENT from repair where to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') >= to_date(?,'yyyy/MM/dd') and to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') <= to_date(?,'yyyy/MM/dd') and RE_STATE ='wa_product' and RE_ENGINEER_ID = ?";
+	      }else if(repairSort.equals("re_exoutput")) {
+	         sql = "select RE_ID, IT_NAME, PR_ID, RE_ENGINEER_ID, RE_ENGINEER_NAME, RE_SORT, RE_STATE, RE_DAY, RE_CONTENT from repair where to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') >= to_date(?,'yyyy/MM/dd') and to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') <= to_date(?,'yyyy/MM/dd') and RE_STATE ='re_exoutput' and RE_ENGINEER_ID = ?"; 
+	      }else if(repairSort.equals("re_disuse")) {
+	         sql = "select RE_ID, IT_NAME, PR_ID, RE_ENGINEER_ID, RE_ENGINEER_NAME, RE_SORT, RE_STATE, RE_DAY, RE_CONTENT from repair where to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') >= to_date(?,'yyyy/MM/dd') and to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') <= to_date(?,'yyyy/MM/dd') and RE_STATE ='re_disuse' and RE_ENGINEER_ID = ?";
+	      }else if(repairSort.equals("all")) {
+	         sql = "select RE_ID, IT_NAME, PR_ID, RE_ENGINEER_ID, RE_ENGINEER_NAME, RE_SORT, RE_STATE, RE_DAY, RE_CONTENT from repair where to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') >= to_date(?,'yyyy/MM/dd') and to_date(to_char(RE_DAY,'yyyy/MM/dd'),'yyyy/MM/dd') <= to_date(?,'yyyy/MM/dd') and RE_ENGINEER_ID = ?";
+	      }
+	      try {
+	         con = factory.getConnection();
+	         pstmt = con.prepareStatement(sql);
+	         pstmt.setString(1, startDate);
+	         pstmt.setString(2, endDate);
+	         pstmt.setString(3, engineerId);
+	         rs = pstmt.executeQuery();
+	         while(rs.next()) {
+	            Map<String, String> map = new HashMap<>();
+	            map.put("repairId", rs.getString("RE_ID"));
+	            map.put("itemName", rs.getString("IT_NAME"));
+	            map.put("productId", rs.getString("PR_ID"));
+	            map.put("engineerId", rs.getString("RE_ENGINEER_ID"));
+	            map.put("engineerName", rs.getString("RE_ENGINEER_NAME"));
+	            map.put("repairSort", rs.getString("RE_SORT"));
+	            map.put("repairState", rs.getString("RE_STATE"));
+	            map.put("repairDate", rs.getString("RE_DAY"));
+	            map.put("repairContent", rs.getString("RE_CONTENT"));
+	            list.add(map);
+	         }
+	      } catch (SQLException e) {
+	         e.printStackTrace();
+	      }finally {
+	         factory.close(con, pstmt, rs);
+	      }
+	      return list;
+	   }
+
 	
 	/* ======================================== by 이원호 ================================================= */
 	
@@ -1644,7 +1877,6 @@ public class AssetDaoImpl implements AssetDao {
 			     } else {
 			    	 map.put("refundCount", "0");
 			     }
-		         return map;
 	         }
 	      } catch (SQLException e) {
 	         e.printStackTrace();
@@ -1652,7 +1884,7 @@ public class AssetDaoImpl implements AssetDao {
 	      }finally {
 	         factory.close(con, pstmt, rs);
 	      }
-		return null;
+		return map;
 	}
-	
+
 }

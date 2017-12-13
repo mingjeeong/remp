@@ -1,8 +1,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
+<h3 align="center">상담</h3>
 <form id="nomalAdviceForm" name="nomalAdviceForm" action="setNomalAdvice" method="post">
-<table style="width: 70%; margin: 30px auto;">
+<table style="width: 70%; margin: 30px auto;" class="is-line">
    <tr>
       <td width="20%" align="center">
          <label>전화번호</label>
@@ -11,7 +11,7 @@
          <input type="text" id="tb_cuMobile" class="form-control is-valid">
       </td>
       <td align="right">
-         <div class="btn-group" data-toggle="buttons">
+         <div class="btn-group">
             <label for="cb_nomal" class="btn btn-outline-warning">
                <input type="checkbox" id="cb_group" name="cb_group" value="nomal">일반상담
             </label>
@@ -22,7 +22,7 @@
                <input type="checkbox" id="cb_group" name="cb_group" value="as">A/S상담
             </label>
             <label for="cb_back" class="btn btn-outline-warning">
-               <input type="checkbox" id="cb_group" name="cb_group" value="refund"  checked>회수상담
+               <input type="checkbox" id="cb_group" name="cb_group" value="refund">회수상담
             </label>
          </div>
       </td>
@@ -55,9 +55,9 @@
 
    <div class="tab-pane fade active in active show" id="di_rent">
    <form id="rentalAdviceForm" name="rentalAdviceForm" action="setRentalAdvice" method="post">
-     <table class="table table-striped" style="width: 90%; margin: 30px auto">
+     <table class="table is-line" style="width: 90%; margin: 30px auto">
        <tr>
-          <td width="100px">
+          <td>
              <label>식별정보</label>
           </td>
           <td colspan="4">
@@ -110,13 +110,10 @@
           <td colspan="3" width="120px">
              <label>재고상태</label>
           </td>
-          <td colspan="2">
-             <input type="text" id="tb_buyCount" class="form-control" placeholder="구매수량" readonly style="width: 49%; display: inline;">                
-             <input type="text" id="tb_waitCount" class="form-control" placeholder="재고수량" readonly style="width: 49%; display: inline; float: right;">
-          </td>
-          <td colspan="2">
-             <input type="text" id="tb_doCount" class="form-control" placeholder="회수대기" readonly style="width: 49%; display: inline;">
-             <input type="text" id="tb_refundCount" class="form-control" placeholder="영업중" readonly style="width: 49%; display: inline; float: right;">
+          <td colspan="4">
+             <input type="text" id="tb_waitCount" class="form-control" placeholder="재고수량" readonly style="width: 33%; display: inline; float: right;">
+             <input type="text" id="tb_doCount" class="form-control" placeholder="회수대기" readonly style="width: 33%; display: inline;">
+             <input type="text" id="tb_refundCount" class="form-control" placeholder="영업중" readonly style="width: 33%; display: inline; float: right;">
           </td>
        </tr>
        <tr>
@@ -399,7 +396,7 @@
   </div>
 </div>
    
-<div>
+<div align="center">
    <input type="button" class="btn btn-primary btn-lg" value="등록" onclick="checkAdvice()">
 </div>
 </body>

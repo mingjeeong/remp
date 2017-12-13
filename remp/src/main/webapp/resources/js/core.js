@@ -7,7 +7,6 @@ $(document).ready(function() { // body onload와 겹쳐서 .ready로 변경
 })
 
 /* ======================================== by 김재림 ================================================= */
-
 /*
  * ReMP에서 사용될 기본 자바스크립트 태그
  * 작성자 : 김재림
@@ -175,6 +174,52 @@ const MsgWindow = class MsgWindow {
 	}
 }
 
+const PwWindow = class PwWindow {
+	/* 전역변수
+	 * setting - 콜백함수
+	 * passwordWindow - 모달윈도우
+	 * pwWindowBody - 모달 내용
+	 */
+	//생성자
+	constructor(setting) {
+		this.setting = setting;
+		this.passwordWindow = $('<div />', {class: 'passwordWindow'});
+			$(this.passwordWindow).data('target', setting);
+		this.pwWindowBody = $('<div />', {class: 'pwWindowBody'});
+		var title = $('<div />', {});
+			$(title).append($('<h3 />', {text: '변경 전 비밀번호 확인'}));
+		var form = $('<div />', {});
+			$(form).append($('<input />', {name: 'check', class: 'form-control form-control-lg', type: 'password', placeholder: '비밀번호 입력'}))
+		var action = $('<div />', {class: 'pwAction'});
+			$(action).append($('<input />', {class: 'btn btn-primary btn-lg', type: 'button', style:'float: right;', onclick: 'PwWindow.hide(this)', value:'취소하기'}));
+			$(action).append($('<input />', {class: 'btn btn-primary btn-lg', type: 'button', style:'float: right;', onclick: 'PwWindow.confirm(this)', value:'확인하기'}));
+			
+		$(this.pwWindowBody).append(title);
+		$(this.pwWindowBody).append($('<hr>',{}));
+		$(this.pwWindowBody).append(form);
+		$(this.pwWindowBody).append($('<hr>',{}));
+		$(this.pwWindowBody).append(action);
+		$(this.passwordWindow).append(this.pwWindowBody);
+	}
+	
+	show() {
+		$('body').append(this.passwordWindow);
+	}
+	
+	static hide(takeElement) {
+		$(takeElement).parents('.passwordWindow').remove();
+	}
+	
+	static confirm(takeElement) {
+		var target = $(takeElement).parents('.passwordWindow');
+		var setting = $(target).data('target');
+		setting.sData.password = $('input[name=check]').val();
+		$(takeElement).parents('.passwordWindow').remove();
+		if (setting.password != '') {
+			userChangeInvokeAJAX(setting.requestURL, setting.sData, setting.href);
+		}
+	}
+}
 /* ------------------------- 일반기능 ------------------------- */
 function setToDate(fromDateValue) {
 	$('#toDate').attr('min', fromDateValue);
@@ -220,10 +265,109 @@ function setDueDiligenceForm() {
 	$('input[name=misc]').val($(headElement).data('misc'));
 }
 
+/* 우편번호 */
+function getPost(takeElement, takeElement2) {
+	new daum.Postcode({
+        oncomplete: function(data) {
+            var fullAddr = '';
+            var extraAddr = '';
+
+            if (data.userSelectedType === 'R') {
+                fullAddr = data.roadAddress;
+            } else {
+                fullAddr = data.jibunAddress;
+            }
+
+            if(data.userSelectedType === 'R'){
+                if(data.bname !== '') {
+                    extraAddr += data.bname;
+                }
+                if(data.buildingName !== '') {
+                    extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                }
+                fullAddr += (extraAddr !== '' ? ' ('+ extraAddr +')' : '');
+            }
+            $(takeElement).val(data.zonecode);
+            $(takeElement2).val(fullAddr);
+        }
+    }).open();
+}
+
+function userChangeInvoke(form) {
+	var sData = {};
+	var a = '';
+	$.each($(form).serializeArray(), function(i, item){
+		a += (i != 0)? ',' : '';
+		a += item.name+':"'+item.value+'"';
+	})
+	eval("sData = {"+a+"}");
+	var setting = {
+			requestURL:$(form).attr('action'),
+			sData:sData,
+			href:'gouserchange.do'
+	}
+	new PwWindow(setting).show();
+	return false;
+}
+
 /* ------------------------- 비동기 통신 ------------------------- */
 /* ajax 공통 */
 var loading = {
 	on: $('<div />', {class: 'loading'}),
+}
+
+/* 회원정보 변경 공통 AJAX */
+function userChangeInvokeAJAX(requestURL, sData, href) {
+	debug(requestURL);
+	debug(sData);
+	debug(href);
+	$.ajax({
+		type : "POST",
+		url : requestURL,
+		data : JSON.stringify(sData),
+		dataType : "JSON",
+		async: false,
+		contentType:'application/json;charset=UTF-8',
+		beforeSend: function() {
+			$("#content").append(loading.on);
+		},
+		success : function(rData) {
+			switch (rData.result) {
+			case "success":
+				var msg = new MsgWindow('plain');
+				location.href = href;
+				break;
+			case "invalid":
+				var msg = new MsgWindow('invalid');
+				msg.setMessage('변경오류','변경할 항목이 존재하지 않거나, 변경할 수 없는 상태입니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "violated":
+				var msg = new MsgWindow('violated');
+				msg.setMessage('정책위반','정책위반이 발생하였습니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			case "network":
+				var msg = new MsgWindow('error');
+				msg.setMessage('네트워크 오류','네트워크에 문제가 있습니다. 관리자에게 문의하십시오.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+				break;
+			}
+		},
+		error : function() {
+			var msg = new MsgWindow('error');
+			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+			msg.setButton('확인','MsgWindow.hide(this)');
+			msg.show();
+		},
+		complete : function() {
+			$(".loading").remove();
+		}
+	});
+	
 }
 
 /* head_detail에서 head 일련번호 세팅하기 */
@@ -261,7 +405,7 @@ function getRentalRequest(takeElement){
 	var requestURL = "getrentalrequest.do";
 	var keyword = $("#keyword").val();
 	if (keyword == null || keyword == "") {
-		keyword = "2017";
+		keyword = "OR";
 	}
 	var sData = JSON.stringify({
 		keyword:keyword
@@ -284,7 +428,7 @@ function getRentalRequest(takeElement){
 			debug(rData);
 			//테이블데이터 생성부분
 			for (var i = 0; i < rData.length; i++) {
-				ihtml += "<tr data-fn-name='getassetlist' data-key='"+rData[i].reqId+"' onclick='setHeadSeqRequest(this)'>";
+				ihtml += "<tr data-fn-name='getassetlist' data-key='"+rData[i].itemId+"' data-request-id='"+rData[i].reqId+"' onclick='setHeadSeqRequest(this)'>";
 				ihtml += "<td>"+rData[i].reqId+"</td><td>"+rData[i].reqTransDate+"</td>";
 				ihtml += "</tr>";
 			}
@@ -335,6 +479,12 @@ function getassetlist(productId) {
 			var ihtml = "";
 			debug(rData.length);
 			debug(rData);
+			if (rData.length == 0) {
+				var msg = new MsgWindow('plain');
+				msg.setMessage('조회내용 없음','조회된 결과가 없습니다.');
+				msg.setButton('확인','MsgWindow.hide(this)');
+				msg.show();
+			}
 			//테이블데이터 생성부분
 			for (var i = 0; i < rData.length; i++) {
 				var row = rData[i];
@@ -378,6 +528,7 @@ function setUnstoreRequest(takeElement) {
 	var requestURL = "rentalassetconfirm.do";
 	var sData = JSON.stringify({
 		id:$(takeElement).parents("tr").data("item-id"),
+		requestId:$(headElement).data("request-id")
 	});
 	debug(sData);
 	debug(requestURL);
@@ -467,18 +618,17 @@ function getRequestAssetList(takeData) {
 			//테이블데이터 생성부분
 			for (var i = 0; i < rData.length; i++) {
 				var row = rData[i];
-				ihtml += "<tr data-item-id='"+ row.id
-					+"' data-item-name='"+ row.name
-					+"' data-item-entrydate='"+ row.entrydate
-					+"' data-item-recentdate='"+ row.recentdate
-					+"' data-item-unstorecount='"+ row.unstorecount
-					+"' data-item-price='"+ row.price+"'>";
-				ihtml += "<td>"+row.id+
-					"</td><td>"+row.name+
-					"</td><td>"+row.entrydate+
-					"</td><td>"+row.recentdate+
-					"</td><td>"+row.unstorecount+
-					"</td><td>"+row.price+
+				ihtml += "<tr data-request-day='"+ row.requestDay
+					+"' data-request-id='"+ row.requestId
+					+"' data-product-id='"+ row.productId
+					+"' data-item-id='"+ row.itemId
+					+"' data-asset-state='"+ row.assetState
+					+"' data-asset-amount='"+ row.amount +"'>";
+				ihtml += "<td>"+row.requestDay+
+					"</td><td>"+row.requestId+
+					"</td><td>"+row.productId+
+					"</td><td>"+row.itemId+
+					"</td><td>"+row.amount+
 					"</td><td><button class='btn btn-primary btn-sm' onclick='setUnstore(this)'>출고</button></td></tr>"
 			}
 			debug(ihtml);
@@ -567,7 +717,9 @@ function getrequestsearchassetlist() {
 function setUnstore(takeElement) {
 	var requestURL = "setunstore.do";
 	var sData = JSON.stringify({
-		id:$(takeElement).parents("tr").data("item-id"),
+		productId:$(takeElement).parents("tr").data("product-id"),
+		requestId:$(takeElement).parents("tr").data("request-id"),
+		assetState:$(takeElement).parents("tr").data("asset-state")
 	});
 	debug(sData);
 	debug(requestURL);
@@ -772,7 +924,7 @@ function newDueDiligencePlan(takeElement) {
  * error - 에러메시지
  */
 function setDueDiligencePlan(takeElement) {
-	var requestURL = "setduediligenceplan.do";
+	var requestURL = ".do";
 	var sData = "{";
 	$($('form[name=due_diligence]').serializeArray()).each(function(i){
 		sData += (i != 0)? ',' : '';
@@ -917,6 +1069,7 @@ function getVisitRequest(takeElement){
          $('.loading').remove();
       },
       error : function() {
+    	  document.location = "goRequestError.do";
       },
       complete : function() {
          $(".loading").remove();
@@ -970,7 +1123,7 @@ function getVisitList(productId, visitId) {
 	        $("#hi_itName").val(rData.itName);
 	        $("#hi_viId").val(rData.viId);
 	        $("#hi_viName").val(rData.viName);
-	        if(typeof(rData.outDay) != 'undefined'){
+	        if((typeof(rData.outDay) != 'undefined') && rData.outDay != null){
 	            var datee = rData.outDay;
 	            var chDate = datee.substring(0,10)+"T"+datee.substring(11);
 	            $("#hi_outDay").val(chDate);
@@ -985,7 +1138,12 @@ function getVisitList(productId, visitId) {
 	        $("#hi_keyValue").val($("#hi_key").val());
 		},
 		error : function() {
-			alert("검색실패!");
+			//이거 일부러 일케함?null 로 확인 하련
+			var a = new MsgWindow("error");
+			a.setMessage("검색에러", "검색에 실패하였습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("검색실패!");
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1005,7 +1163,7 @@ function setFixInfo(targetEelement) {
 		type : "POST",
 		url : requestURL,
 		data : sData,
-		dataType : "json",	// json하면 오류
+		dataType : "text",	// json하면 오류
 		async: true,
 		contentType:'application/json;charset=UTF-8',
 		beforeSend: function() {
@@ -1013,11 +1171,19 @@ function setFixInfo(targetEelement) {
 		},
 		success : function(rData) {
 			debug("rData : " + rData);
-			alert("등록완료!!");
+			var a = new MsgWindow("plain");
+			a.setMessage("등록완료", "결과가 등록되었습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("등록완료!!");
 			getVisitRequest(key);
 		},
 		error : function(request,status,error) {
-			alert("code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
+//			var a = new MsgWindow("error");
+//			a.setMessage("에러", "결과등록에 실패하였습니다..");
+//			a.setButton("확인", "MsgWindow.hide(this)");
+//			a.show();
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1056,6 +1222,7 @@ function getProductRequest(takeElement){
 			//테이블데이터 생성부분
 			for (var i = 0; i < rData.length; i++) {
 				var row = rData[i];
+				debug("123123" + row.itId)
 				ihtml += "<tr data-item-prid='"+ row.prId
 					+"' data-item-buyid='"+ row.buyId
 					+"' data-item-itid='"+ row.itId
@@ -1067,7 +1234,6 @@ function getProductRequest(takeElement){
 					+"' data-item-prlocation='"+ row.prLocation
 					+"' data-item-prstate='"+ row.prState
 					+"' data-item-prcount='"+ row.prCount
-					+"' data-item-prneeds='"+ row.prNeeds
 					+"' data-item-prqr='"+ row.prQr
 					+"' data-item-keyvalue='"+ keyValue+"'>";
 				ihtml += "<td>"+row.prId+
@@ -1081,9 +1247,8 @@ function getProductRequest(takeElement){
 					"</td><td>"+row.prLocation+
 					"</td><td>"+row.prState+
 					"</td><td>"+row.prCount+
-					"</td><td>"+row.prNeeds+
-					"</td><td>"+row.prQr+
-					"</td><td><div style='display: none; ' id='donghun'>"+row.prQr+
+					"</td><td>" +
+					"</td><td><div style='display: none' id='donghun'>"+row.prQr+
 					"</div><button class='btn btn-primary btn-sm' onclick='doQrPrint(this)'>QR인쇄</button>"+
 					"</td><td><button class='btn btn-primary btn-sm' onclick='doProductUpdate(this)''>수정</button></td></tr>"
 			}
@@ -1093,12 +1258,11 @@ function getProductRequest(takeElement){
 			$('.loading').remove();
 		},
 		error : function() {
-			var eMsg = new MsgWindow();
-			eMsg.setWindowType("error");
-			eMsg.setMessage('검색결과없음', keyValue + "에 대한 검색결과가 없습니다.");
-			eMsg.setButton('확인','debug(this.value)');
-			eMsg.show(); 
-			//alert(keyValue + "에 대한 검색결과가 없습니다.");
+			var a = new MsgWindow("error");
+			a.setMessage("검색결과없음", keyValue + "에 대한 검색결과가 없습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert(keyValue + "에 대한 검색결과가 없습니다.");
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1108,12 +1272,12 @@ function getProductRequest(takeElement){
 
 /*  자산관리 QR코드 인쇄하기  */
 function doQrPrint(takeElement){
-//	document.body.innerHTML = $(takeElement).parents("tr").find("div").html();
 	var QR = $(takeElement).parents("tr").find("div").html();
+	debug(QR);
 	var objWin = window.open('', 'print', 'height=600,width=800');
-	objWin.document.write("<div>");
+	objWin.document.write("<div><img src='resources/images/");
 	objWin.document.write(QR);
-	objWin.document.write("</div>");
+	objWin.document.write("'/></div>");
 	objWin.print();
 	objWin.close();
 }
@@ -1127,6 +1291,7 @@ function doProductUpdate(takeElement) {
 		itId:""+$(takeElement).parents("tr").data("item-itid"),
 		keyvalue:$(takeElement).parents("tr").data("item-keyvalue")
 	});
+	debug("야이 좀 :" +$(takeElement).parents("tr").data("item-itid"))
 	debug("자산변경 keyvalue : " + $(takeElement).parents("tr").data("item-keyvalue"));
 	debug("자산변경 takeElement : " + takeElement);
 	debug("자산변경 sData : " + sData);
@@ -1144,8 +1309,12 @@ function doProductUpdate(takeElement) {
 		success : function(rData) {
 			$("#productCare").hide();
 			$("#productUpdate").fadeIn(100);
-			if(typeof(rData.prOutDay) != 'undefined'){
-				$("#img_itImage").attr("src", rData.itImage)
+			debug("잠좀자자 : " + rData)
+			debug("잠좀자자 : " + rData.itId)
+			debug("잠좀자자 : " + rData.prId)
+			debug("잠좀자자 : " + rData.length)
+			//if(typeof(rData.prOutDay) != 'undefined' && (rData.prOutDay != null)){
+				$("#img_itImage").attr("src", "\resources\images" + rData.itImage)
 				$("#fi_prId").val(rData.prId);
 				$("#hi_itImage").val(rData.itImage)
 				$("#tb_prId").val(rData.prId)
@@ -1169,7 +1338,7 @@ function doProductUpdate(takeElement) {
 				debug("rData.prState : " + rData.prState)
 				$("#tb_prCount").val(rData.prCount)
 				
-				if((typeof(rData.prOutDay) != 'undefined') && (rData.prInDay != null)) {
+				if((typeof(rData.prOutDay) != 'undefined') && (rData.prOutDay != null)) {
 					if((rData.prOutDay.length > 0)){
 						var datee = rData.prOutDay;
 				        var chDate = datee.substring(0,10)+"T"+datee.substring(11);
@@ -1188,13 +1357,22 @@ function doProductUpdate(takeElement) {
 		        $("#img_itImage").attr("src", rData.itImage);
 		        debug("img_itImage : " + rData.itImage)
 		        debug("fi_itImage : " + $("#fi_itImage").val())
-			} else{
-				alert("값이엄성 ㅜ")
-			}
+		        
+//			} else{
+//				var a = new MsgWindow("error");
+//				a.setMessage("에러", "값이 존재하지 않습니다.");
+//				a.setButton("확인", "MsgWindow.hide(this)");
+//				a.show();
+////				alert("값이 존재하지 않습니다.")
+//			}
 			debug("rData.itImage = " + rData.itImage)
 		},
-		error : function(rData) {
-			alert("가져오기실패!");
+		error : function() {
+//			var a = new MsgWindow("error");
+//			a.setMessage("에러", "값이 존재하지 않습니다.");
+//			a.setButton("확인", "MsgWindow.hide(this)");
+//			a.show();
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1223,10 +1401,19 @@ function setProductUpdate(targetEelement) {
 			var key = $("#hi_keyword").val();
 			$("#productCare").fadeIn(100);
 			$("#productUpdate").hide();
+			var a = new MsgWindow("plain");
+			a.setMessage("변경성공", "변경되었습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("변경되었습니다.")
 			getProductRequest(key)
 		},
 		error : function() {
-			alert("자산변경실패!");
+//			var a = new MsgWindow("error");
+//			a.setMessage("자산변경실패", "입력값을 한번 더 확인하여주세요.");
+//			a.setButton("확인", "MsgWindow.hide(this)");
+//			a.show();
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1238,12 +1425,13 @@ function setProductUpdate(targetEelement) {
 function setProductUpdateAll(targetEelement) {
 	var tmpImage = $("#tb_file").val()
 	var image = tmpImage.substring(12)
-	var tmpPrId = $("#tb_prId").val();
-	var prId = tmpPrId + "_" + image;
-	$("#tb_itImage").val(prId)
+	var tmpItId = $("#tb_itId").val();
+	var itId = tmpItId + "_" + image;
+	$("#tb_itImage").val(itId)
 	$("#hi_itImage").val(tmpImage)
 	var requestURL = "setProductUpdateAll.do";
 	var sData =  formChange($(targetEelement).parents("form"));
+	debug(itId)	// 파일이미지 이름
 	debug("자산변경 sData ALL: " + sData);
 	debug(requestURL);
 	$.ajax({
@@ -1266,15 +1454,29 @@ function setProductUpdateAll(targetEelement) {
 			$("#tb_itPrice").attr("readonly", true);
 			$("#tb_itAcquisition").attr("readonly", true);
 			$("#fi_itImage").attr("disabled", true);
+			$("#ta_itContent").css("background-color", "lightgray");
+			$("#tb_itPeriod").css("background-color", "lightgray");
+			$("#tb_itPrice").css("background-color", "lightgray");
+			$("#tb_itAcquisition").css("background-color", "lightgray");
+			$("#tb_itManufacturer").css("background-color", "lightgray");
+			$("#tb_itCode").css("background-color", "lightgray");
+			$("#tb_itName").css("background-color", "lightgray");
 			$("#bt_doAllEdit").show();
 			$("#bt_edit").show();
 			$("#bt_allEdit").hide();
 			fileUpload();
+			var a = new MsgWindow("plain");
+			a.setMessage("변경성공", "변경되었습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
 			getProductRequest(key)
-			debug("자산변경 ALL 끝")
 		},
 		error : function() {
-			alert("자산변경실패(ALL)!");
+//			var a = new MsgWindow("error");
+//			a.setMessage("자산변경실패", "입력값을 한번 더 확인하여주세요.");
+//			a.setButton("확인", "MsgWindow.hide(this)");
+//			a.show();
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1297,20 +1499,25 @@ function getProductInsertRequest(){
       },
       success : function(rData) {
          var ihtml = "";
-         debug("rData.length : " + rData.length);
-         debug(rData);
+         debug("자산등록요청rData.length : " + rData.length);
+         debug("자산등록요청rData : " + rData);
          //테이블데이터 생성부분
          for (var i = 0; i < rData.length; i++) {
             ihtml += "<tr data-fn-name='getProductInsertList' data-key='"+rData[i].prId+"' onclick='setHeadSeqRequest(this)'>";
-            ihtml += "<td>"+rData[i].inName+"</td><td>"+rData[i].inState+"</td><td>"+rData[i].inFDay+"</td><td>"+rData[i].inComplete+"</td>";
+            ihtml += "<td>"+rData[i].prId+"</td><td>등록대기</td><td>"+rData[i].prFDay+"</td>";
             ihtml += "</tr>";
+            debug("테이블 생성구간 prId값 : " + rData[i].prId);
          }
          debug(ihtml);
          $("#procutRequestList tbody").html(ihtml);
          $('.loading').remove();
       },
       error : function() {
-    	  alert("등록요청조회실패")
+//			var a = new MsgWindow("error");
+//			a.setMessage("조회실패", "조회에 실패하였습니다.");
+//			a.setButton("확인", "MsgWindow.hide(this)");
+//			a.show();
+    	  document.location = "goRequestError.do";
       },
       complete : function() {
          $(".loading").remove();
@@ -1352,7 +1559,7 @@ function getProductInsertList(productId) {
 	        $("#tb_itManufacturer").val(rData.itManufacturer);
 	        $("#tb_itName").val(rData.itName);
 	        $("#tb_itCode").val(rData.itCode);
-	        if((typeof(rData.prFirstDay) != 'undefined') && (rData.prInDay != null)) {
+	        if((typeof(rData.prFirstDay) != 'undefined') && (rData.prFirstDay != null)) {
 	        	if((rData.prFirstDay.length > 0)){
 	        		var datee = rData.prFirstDay;
 	        		var chDate = datee.substring(0,10)+"T"+datee.substring(11);
@@ -1378,7 +1585,7 @@ function getProductInsertList(productId) {
 			$("#sb_prState").val(rData.prState)
 			$("#tb_prCount").val(rData.prCount)
 			
-			if((typeof(rData.prOutDay) != 'undefined') && (rData.prInDay != null)) {
+			if((typeof(rData.prOutDay) != 'undefined') && (rData.prOutDay != null)) {
 				if((rData.prOutDay.length > 0)){
 					var datee = rData.prOutDay;
 			        var chDate = datee.substring(0,10)+"T"+datee.substring(11);
@@ -1398,7 +1605,11 @@ function getProductInsertList(productId) {
 	        debug("fi_itImage : " + $("#fi_itImage").val())
 		},
 		error : function() {
-			alert("검색실패!");
+//			var a = new MsgWindow("error");
+//			a.setMessage("검색실패", "검색에 실패하였습니다.");
+//			a.setButton("확인", "MsgWindow.hide(this)");
+//			a.show();
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1413,15 +1624,13 @@ function setProductInsert(targetEelement) {
 	debug("tmpImage : " + $("#tb_file").val())
 	var image = tmpImage.substring(12)
 	debug("image : " + image)
-	var tmpPrId = $("#tb_prId").val();
-	debug("tmpPrId : " + tmpPrId)
-	var prId = tmpPrId + "_" + image;
-	debug("prId : " + prId)
-	$("#tb_itImage").val(prId)
-	debug("$(#tb_itImage).val(prId) : " + $("#tb_itImage").val(prId))
-	var sData = formChange($(targetEelement).parents("form")); + JSON.stringify({
-		tb_itImage:$("#tb_itImage").val(prId),
-	});
+	var tmpItId = $("#tb_itId").val();
+	debug("tmpItId : " + tmpItId)
+	var itId = tmpItId + "_" + image;
+	debug("itId : " + itId)
+	$("#tb_itImage").val(itId)
+	debug("$(#tb_itImage).val(itId) : " + $("#tb_itImage").val(itId))
+	var sData = formChange($(targetEelement).parents("form"))
 	 debug("자산등록 sData : " + sData);
 	 debug(requestURL);
 	$.ajax({
@@ -1436,12 +1645,20 @@ function setProductInsert(targetEelement) {
 		},
 		success : function(rData) {
 			debug("rData : " + rData);
-			alert("등록완료!!");
+			var a = new MsgWindow("plain");
+			a.setMessage("등록완료", "등록에 성공하였습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("등록완료!!");
 			fileUpload();
 			getProductInsertRequest();
 		},
 		error : function() {
-			alert("자산등록실패!");
+			var a = new MsgWindow("error");
+			a.setMessage("자산등록실패", "입력값을 한번 더 확인하여주세요.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("자산등록실패!");
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1466,10 +1683,18 @@ function fileUpload() {
 		},
 		success : function(rData) {
 			debug("rData : " + rData);
-			alert("이미지 등록완료!!");
+			var a = new MsgWindow("plain");
+			a.setMessage("성공", "이미지 등록에 성공하였습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("이미지 등록완료!!");
 		},
 		error:function(){
-			alert("이미지 등록실패!!");
+			var a = new MsgWindow("error");
+			a.setMessage("실패", "이미지 등록에 실패하였습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("이미지 등록실패!!");
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1490,7 +1715,11 @@ function doAllEdit(){
 	$("#bt_doAllEdit").hide();
 	$("#bt_edit").hide();
 	$("#bt_allEdit").show();
-	alert("이제 품목항목도 변경이 가능합니다.")
+//	alert("이제 품목항목도 변경이 가능합니다.")
+	var a = new MsgWindow("plain");
+	a.setMessage("전체변경", "이제 품목관련 항목도 변경이 가능합니다.");
+	a.setButton("확인", "MsgWindow.hide(this)");
+	a.show();
 	$("#ta_itContent").attr("readonly", false);
 	$("#tb_itPeriod").attr("readonly", false);
 	$("#tb_itPrice").attr("readonly", false);
@@ -1498,60 +1727,72 @@ function doAllEdit(){
 	$("#tb_itManufacturer").attr("readonly", false);
 	$("#tb_itCode").attr("readonly", false);
 	$("#tb_itName").attr("readonly", false);
+	
+	$("#ta_itContent").css("background-color", "white");
+	$("#tb_itPeriod").css("background-color", "white");
+	$("#tb_itPrice").css("background-color", "white");
+	$("#tb_itAcquisition").css("background-color", "white");
+	$("#tb_itManufacturer").css("background-color", "white");
+	$("#tb_itCode").css("background-color", "white");
+	$("#tb_itName").css("background-color", "white");
+
 	$("#tb_file").attr("disabled", false);
 }
 
 /* 상담 고객 정보 조회 */
 function getVisitCustomer(takeElement) {
-	   var sData = JSON.stringify({
-	      memberId:$(takeElement).val()
-	   });
-	   debug("상담sData : " + sData)
-	   $.ajax({
-	      type : "POST",
-	      url : "getCustomerInfo.do",
-	      data : sData,
-	      dataType : "JSON",
-	      async: true,
-	      contentType:'application/json;charset=UTF-8',
-	      beforeSend: function() {
-	         $("#content").append(loading.on);
-	      },
-	      success : function(rData) {
-	    	  debug("상담rData : " + rData)
-	         if(typeof(rData.memName) != 'undefined'){
-	        	 $(takeElement).parents("form").children().find("#tb_cuName").val(rData.memName);
-	        	 $(takeElement).parents("form").children().find("#tb_cuBirth").val(rData.memBirth);
-	        	 $(takeElement).parents("form").children().find("#tb_post").val(rData.memPost);
-	        	 $(takeElement).parents("form").children().find("#tb_addr").val(rData.memAddr);
-	        	 $(takeElement).parents("form").children().find("#tb_addD").val(rData.memAddD);
-	        	 $(takeElement).parents("form").children().find("#tb_cuResult").val("회원입니다.");
-	        	 $(takeElement).parents("form").children().find("#tb_cuName").prop("readonly", true);
-	        	 $(takeElement).parents("form").children().find("#tb_cuBirth").prop("readonly", true);
-	        	 $(takeElement).parents("form").children().find("#bt_temporary").prop("disabled", true);
-	        	 if($(takeElement).parents("form").attr("name") != "rentalAdviceForm"){
-	        		 getVisitItem(takeElement);
-	        	 }
-	         } else {
-	        	 $(takeElement).parents("form").children().find("#tb_cuName").val("");
-	        	 $(takeElement).parents("form").children().find("#tb_cuBirth").val("");
-	        	 $(takeElement).parents("form").children().find("#tb_post").val("");
-	        	 $(takeElement).parents("form").children().find("#tb_addr").val("");
-	        	 $(takeElement).parents("form").children().find("#tb_addD").val("");
-	        	 $(takeElement).parents("form").children().find("#tb_cuResult").val("비회원입니다.");
-	        	 if($(takeElement).parents("form").attr("name") == "rentalAdviceForm"){
-	        		 $(takeElement).parents("form").children().find("#tb_cuName").prop("readonly", false);
-	        		 $(takeElement).parents("form").children().find("#tb_cuBirth").prop("readonly", false);
-	        		 $(takeElement).parents("form").children().find("#bt_temporary").prop("disabled", false);
-	        	 }
-	         }
-	      },
-	      error : function() {
-	         alert("검색결과 없습니다.");
-	      },
-	      complete : function() {
-	         $(".loading").remove();
-	    }
+      var sData = JSON.stringify({
+         memberId:$(takeElement).val()
+      });
+      debug("상담sData : " + sData)
+      $.ajax({
+         type : "POST",
+         url : "getCustomerInfo.do",
+         data : sData,
+         dataType : "JSON",
+         async: true,
+         contentType:'application/json;charset=UTF-8',
+         beforeSend: function() {
+            $("#content").append(loading.on);
+         },
+         success : function(rData) {
+            debug("상담rData : " + rData)
+            if(!rData.isEmpty){
+               $(takeElement).parents("form").children().find("#tb_cuName").val(rData.memName);
+               $(takeElement).parents("form").children().find("#tb_cuBirth").val(rData.memBirth);
+               $(takeElement).parents("form").children().find("#tb_post").val(rData.memPost);
+               $(takeElement).parents("form").children().find("#tb_addr").val(rData.memAddr);
+               $(takeElement).parents("form").children().find("#tb_addD").val(rData.memAddD);
+               $(takeElement).parents("form").children().find("#tb_cuResult").val("회원입니다.");
+               $(takeElement).parents("form").children().find("#tb_cuName").prop("readonly", true);
+               $(takeElement).parents("form").children().find("#tb_cuBirth").prop("readonly", true);
+               $(takeElement).parents("form").children().find("#bt_temporary").prop("disabled", true);
+               if($(takeElement).parents("form").attr("name") != "rentalAdviceForm"){
+                  getVisitItem(takeElement);
+               }
+            } else {
+               $(takeElement).parents("form").children().find("#tb_cuName").val("");
+               $(takeElement).parents("form").children().find("#tb_cuBirth").val("");
+               $(takeElement).parents("form").children().find("#tb_post").val("");
+               $(takeElement).parents("form").children().find("#tb_addr").val("");
+               $(takeElement).parents("form").children().find("#tb_addD").val("");
+               $(takeElement).parents("form").children().find("#tb_cuResult").val("비회원입니다.");
+               if($(takeElement).parents("form").attr("name") == "rentalAdviceForm"){
+                  $(takeElement).parents("form").children().find("#tb_cuName").prop("readonly", false);
+                  $(takeElement).parents("form").children().find("#tb_cuBirth").prop("readonly", false);
+                  $(takeElement).parents("form").children().find("#bt_temporary").prop("disabled", false);
+               }
+            }
+         },
+         error : function() {
+            var a = new MsgWindow("error");
+            a.setMessage("실패", "검색결과가 없습니다.");
+            a.setButton("확인", "MsgWindow.hide(this)");
+            a.show();
+         },
+         complete : function() {
+            $(".loading").remove();
+       }
    });
 }
 
@@ -1608,7 +1849,11 @@ function getVisitItem(takeElement) {
 	         }
 	      },
 	      error : function() {
-	         alert("검색결과 없습니다.");
+				var a = new MsgWindow("error");
+				a.setMessage("실패", "검색결과가 없습니다.");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
+//	         alert("검색결과 없습니다.");
 	      },
 	      complete : function() {
 	         $(".loading").remove();
@@ -1661,7 +1906,11 @@ function changeValue(takeElement) {
 	    	  }
 	      },
 	      error : function() {
-	         alert("검색결과 없습니다.");
+				var a = new MsgWindow("error");
+				a.setMessage("실패", "검색결과가 없습니다.");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
+//	         alert("검색결과 없습니다.");
 	      },
 	      complete : function() {
 	         $(".loading").remove();
@@ -1671,10 +1920,10 @@ function changeValue(takeElement) {
 
 /*  as상담등록하기  */
 function setAsAdvice(adviceId) {
-	var sData = formChange($("#asAdviceForm")) + JSON.stringify({
+	var sData = $.extend({}, {
 		adviceId:adviceId,
-		tb_mobile:$("#tb_mobile").val()
-	});
+		tb_mobile:$("#tb_mobile").val()		
+	}, JSON.parse(formChange($("#asAdviceForm"))));
 	var result =" ";
 	var requestURL = "setAsAdvice.do";
 	debug("as상담등록 sData : " + sData);
@@ -1682,7 +1931,7 @@ function setAsAdvice(adviceId) {
 	$.ajax({
 		type : "POST",
 		url : requestURL,
-		data : sData,
+		data : JSON.stringify(sData),
 		dataType : "JSON",
 		async: false,
 		contentType:'application/json;charset=UTF-8',
@@ -1691,11 +1940,20 @@ function setAsAdvice(adviceId) {
 		},
 		success : function(rData) {
 			debug("rData : " + rData);
-			alert("등록완료!!");
+			var a = new MsgWindow("plain");
+			a.setMessage("성공", "등록에 성공하였습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("등록완료!!");
 			result = rData;
+			document.location = "goAdvice.do"
 		},
 		error : function() {
-			alert("자산등록실패!");
+			var a = new MsgWindow("error");
+			a.setMessage("실패", "등록에 실패하였습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("등록실패!");
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1706,12 +1964,11 @@ function setAsAdvice(adviceId) {
 
 /* 회수상담등록하기 */
 function setRefundAdvice(adviceId) {
-	var sData = formChange($("#refundAdviceForm")) + JSON.stringify({
+	var sData = $.extend({}, {
 		adviceId:adviceId,
 		tb_mobile:$("#tb_mobile").val(),
 		reason:$("input[type=radio][name=rb_expiration]:checked").val()
-
-	});
+	}, JSON.parse(formChange($("#refundAdviceForm"))));
 	var result =" ";
 	var requestURL = "setRefundAdvice.do";
 	debug("회수상담등록 sData : " + sData);
@@ -1719,7 +1976,7 @@ function setRefundAdvice(adviceId) {
 	$.ajax({
 		type : "POST",
 		url : requestURL,
-		data : sData,
+		data : JSON.stringify(sData),
 		dataType : "JSON",
 		async: false,
 		contentType:'application/json;charset=UTF-8',
@@ -1728,11 +1985,20 @@ function setRefundAdvice(adviceId) {
 		},
 		success : function(rData) {
 			debug("rData : " + rData);
-			alert("등록완료!!");
+			var a = new MsgWindow("plain");
+			a.setMessage("성공", "등록에 성공하였습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("등록완료!!");
 			result = rData;
+			document.location = "goAdvice.do";
 		},
 		error : function() {
-			alert("자산등록실패!");
+			var a = new MsgWindow("error");
+			a.setMessage("실패", "등록에 실패하였습니다.");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
+//			alert("자산등록실패!");
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -1882,7 +2148,7 @@ function setJoinId() {
 		    	  }
 		      },
 		      error : function() {
-		    	  alert("error");
+		    	  document.location = "goUserRequestError.do";
 		      },
 		      complete : function() {
 		         $(".loading").remove();
@@ -1904,13 +2170,6 @@ function setPwCheck() {
 		$("#la_pwCheck").html("<font color='blue'>비밀번호가 일치합니다.</font>");
 	} else {
 		$("#la_pwCheck").html("<font color='red'>비밀번호가 일치하지 않습니다.</font>");
-	}
-}
-
-/* 카드 길이 확인 및 다음 번호 이동 */
-function cardNext(card) {
-	if ( card.val().length() == 4 ){
-		document.getElementById($(card).id+1).focus();
 	}
 }
 
@@ -1977,6 +2236,7 @@ function searchCheck(takeElement){
 	}
 }
 
+/* 객체 정렬 */
 function formChange(form){
    var jsonstr = "{";
       $.each($(form).serializeArray(), function(index, item){
@@ -2020,6 +2280,7 @@ function getMemberList(takeElement){
 			$('.loading').remove();
 		},
 		error : function() {
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -2036,7 +2297,7 @@ function getMemberInfo(memberId, target) {
 	selectedHeadSeq = memberId;
 	var requestURL = "get"+target+"Info.do";
 	var sData = JSON.stringify({
-		memberId:memberId
+		memberId:""+memberId
 	});
 	debug(sData);
 	debug(requestURL);
@@ -2076,9 +2337,13 @@ function getMemberInfo(memberId, target) {
 			$("#la_lastUpdate").html("최근 상태 변경 일자   "+rData.memUpdate);
 			$("#tb_auId").val(rData.memAuId);
 			$("#bt_insert").hide();
+			var a = new MsgWindow("");
+			a.setMessage("", "불러오기 성공!");
+			a.setButton("확인", "MsgWindow.hide(this)");
+			a.show();
 		},
 		error : function() {
-			alert("검색실패!");
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -2097,7 +2362,7 @@ function setDateCheck(takeElement) {
 //관리자 고객, 직원 정보 전체 변경 , 직원 등록, 회수결과 처리
 function getMemberChange(takeElement) {
 	var requestURL = $(takeElement).parents("form").attr("action");
-	var sData = formChange($(takeElement).parents("form"));
+	var sData = ""+formChange($(takeElement).parents("form"));
 	
 	debug(sData);
 	debug(requestURL);
@@ -2115,9 +2380,15 @@ function getMemberChange(takeElement) {
 			debug("click : "+rData.length);
 			debug("click : "+rData);
 			if(rData){
-				alert("성공1");
+				var a = new MsgWindow("");
+				a.setMessage("", "성공");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
 			}else{
-				alert("실패1");
+				var a = new MsgWindow("error");
+				a.setMessage("", "실패");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
 			}
 			if(requestURL == "addCompanionJoin.do"){
 				$("#tb_memId").val("");
@@ -2128,12 +2399,13 @@ function getMemberChange(takeElement) {
 				$("#tb_memWork").val("");
 				$("#tb_memState").val("");
 				$("#tb_memId").val("");
+				a.show();
 			} else if(requestURL == "setRentalRefundResult.do"){
 				getVisitRequest(takeElement);
 			}
 		},
 		error : function() {
-			alert("검색실패!");
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -2141,14 +2413,19 @@ function getMemberChange(takeElement) {
 	});
 }
 
+//관리자 고객, 직원 개별 정보 변경
 function setMemberItemChange(takeElement) {
 	var requestURL = "setMemberItemChange.do";
-	var sData = formChange($(takeElement).parents("tr").find("input"))+formChange($("#tr_memId").find("input"))+formChange($(takeElement).parents("tr").find("select"));
+	if (formChange($(takeElement).parents("tr").find("select")).length > 0){
+		var sData = $.extend({},JSON.parse(formChange($(takeElement).parents("tr").find("input"))),JSON.parse(formChange($("#tr_memId").find("input"))));
+	} else {
+		var sData = $.extend({},JSON.parse(formChange($(takeElement).parents("tr").find("input"))),$.extend({},JSON.parse(formChange($("#tr_memId").find("input"))),JSON.parse(formChange($(takeElement).parents("tr").find("select")))));
+	}
 	debug("aa : "+sData)
 	$.ajax({
 		type : "POST",
 		url : requestURL,
-		data : sData,
+		data : JSON.stringify(sData),
 		dataType : "JSON",
 		async: true,
 		contentType:'application/json;charset=UTF-8',
@@ -2156,16 +2433,20 @@ function setMemberItemChange(takeElement) {
 			$("#content").append(loading.on);
 		},
 		success : function(rData) {
-			debug("click : "+rData.length);
-			debug("click : "+rData);
 			if(rData){
-				alert("성공");
+				var a = new MsgWindow("");
+				a.setMessage("", "정보 변경 성공!");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
 			}else{
-				alert("실패");
+				var a = new MsgWindow("error");
+				a.setMessage("", "정보 변경 실패!");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
 			}
 		},
 		error : function() {
-			alert("검색실패!");
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -2187,7 +2468,7 @@ function insertOn(){
 	$("#bt_insert").show();
 }
 
-//아이디 순차 부어
+//임시 아이디 순차 부어
 function setRandomId(){
 	$.ajax({
 		type : "POST",
@@ -2202,7 +2483,7 @@ function setRandomId(){
 			$("#tb_memId").val(rData);
 		},
 		error : function() {
-			alert("검색실패!");
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -2228,22 +2509,29 @@ function getProductCount(){
 		},
 		success : function(rData) {
 			debug(rData + " : item")
-			$("#tb_itName").val(rData.itName);
-			$("#tb_waitCount").val(rData.waitCount);
-			$("#tb_doCount").val(rData.doCount);
-			$("#tb_refundCount").val(rData.refundCount);
-			$("#tb_itPeriod").val(rData.itPeriod);
-			$("#tb_itPrice").val(rData.itPrice);
+			if (!rData.isEmpty){
+				$("#tb_itName").val(rData.itName);
+				$("#tb_waitCount").val(rData.waitCount);
+				$("#tb_doCount").val(rData.doCount);
+				$("#tb_refundCount").val(rData.refundCount);
+				$("#tb_itPeriod").val(rData.itPeriod);
+				$("#tb_itPrice").val(rData.itPrice);
+			} else {
+				$("#tb_itId").val("");
+				$("#tb_itName").val("");
+				$("#tb_waitCount").val("");
+				$("#tb_doCount").val("");
+				$("#tb_refundCount").val("");
+				$("#tb_itPeriod").val("");
+				$("#tb_itPrice").val("");
+				var a = new MsgWindow("error");
+				a.setMessage("", "검색 결과가 없습니다.");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
+			}
 		},
 		error : function() {
-			alert("검색결과 업습니다.");
-			$("#tb_itId").val("");
-			$("#tb_itName").val("");
-			$("#tb_waitCount").val("");
-			$("#tb_doCount").val("");
-			$("#tb_refundCount").val("");
-			$("#tb_itPeriod").val("");
-			$("#tb_itPrice").val("");
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -2286,7 +2574,7 @@ function temporary(takeElement){
 			}
 		},
 		error : function() {
-			alert("검색결과 업습니다.");
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -2321,7 +2609,7 @@ function buyMethod(takeElement) {
 //상담 등록
 function checkAdvice() {
 	var adviceId="";
-	
+	var count = 0;
 	if ($("#cb_group:checked").length > 0){
 		adviceId = addAdviceId();
 		debug(adviceId+" : ad ID")
@@ -2341,10 +2629,11 @@ function checkAdvice() {
 				}
 				});
 		} else {
-			alert("상담 등록 실패")
+			document.location = "goRequestError.do";
 		}
+	} else {
+		alert("라디오 선택!!")
 	}
-	
 }
 
 // 상담 아이디 가져오기
@@ -2366,7 +2655,7 @@ function addAdviceId() {
 			}
 		},
 		error : function() {
-			alert("검색결과 없습니다.");
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -2375,14 +2664,16 @@ function addAdviceId() {
 	return result;
 }
 
+//일반 상담
 function setNomalAdvice(adviceId) {
-	var sData = formChange($("#nomalAdviceForm")) + JSON.stringify({
+	var sData = $.extend({}, {
 		adviceId:adviceId
-	});
+		}, JSON.parse(formChange($("#nomalAdviceForm")))
+		);
 	$.ajax({
 		type : "POST",
 		url : "addNomalAdvice.do",
-		data : sData,
+		data : JSON.stringify(sData),
 		dataType : "json",
 		async: false,
 		contentType:'application/json;charset=UTF-8',
@@ -2390,10 +2681,20 @@ function setNomalAdvice(adviceId) {
 			$("#content").append(loading.on);
 		},
 		success : function(rData) {
-			debug(rData + " : Nomal Advice")
+			if(rData != 0) {
+				var a = new MsgWindow("");
+				a.setMessage("", "상담 등록 성공");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
+			} else {
+				var a = new MsgWindow("error");
+				a.setMessage("", "상담 등록 실패");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
+			}
 		},
 		error : function() {
-			alert("검색결과 업습니다.");
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -2401,15 +2702,16 @@ function setNomalAdvice(adviceId) {
 	});
 }
 
+//렌탈 상담
 function setRentalAdvice(adviceId) {
-	var sData = formChange($("#rentalAdviceForm")) + JSON.stringify({
+	var sData = $.extend({}, JSON.parse(formChange($("#rentalAdviceForm"))), {
 		adviceId:adviceId,
 		tb_mobile:$("#tb_mobile").val()
 	});
 	$.ajax({
 		type : "POST",
 		url : "addRentalAdvice.do",
-		data : sData,
+		data : JSON.stringify(sData),
 		dataType : "json",
 		async: false,
 		contentType:'application/json;charset=UTF-8',
@@ -2417,10 +2719,21 @@ function setRentalAdvice(adviceId) {
 			$("#content").append(loading.on);
 		},
 		success : function(rData) {
-			debug(rData + " : Rental Advice")
+			debug(rData + "aaa")
+			if(rData != 0) {
+				var a = new MsgWindow("");
+				a.setMessage("", "렌탈 상담 등록 성공");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
+			} else {
+				var a = new MsgWindow("error");
+				a.setMessage("", "렌탈 상담 등록 실패");
+				a.setButton("확인", "MsgWindow.hide(this)");
+				a.show();
+			}
 		},
 		error : function() {
-			alert("검색결과 업습니다.");
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
@@ -2442,52 +2755,19 @@ function qrCreate(){
 			debug(rData + " : Rental Advice")
 		},
 		error : function() {
-			alert("검색결과 업습니다.");
+			document.location = "goRequestError.do";
 		},
 		complete : function() {
 			$(".loading").remove();
 		}
 	});
 }
-
-function uploadTest(){
-	alert("aa")
-	$('#fileTestForm').ajaxForm({
-		type : "POST",
-		url : "uploadTest.do",
-		dataType : "text",
-		async: false,
-		method: "post",
-		enctype: "multipart/form-data",
-		contentType:'application/json;charset=UTF-8',
-		beforeSend: function() {
-			$("#content").append(loading.on);
-			return false;
-		},
-		success : function(rData) {
-			debug("rData : " + rData);
-			alert("이미지 등록완료!!");
-		},
-		error:function(){
-			alert("이미지 등록실패!!");
-		},
-		complete : function() {
-			$(".loading").remove();
-		}
-	});
-	$("#fileTestForm").submit();
-}
-
-function changeColor(color){
-	$("#aaaa").css("background-color", color);
-}
-
 
 ///* ======================================== by 이민정 ================================================= */
 
 /*비밀번호변경 확인*/
 function checkPw(){
-	if($("#newpw").val() != $("#checkpw").val()){
+	if($("#newPw").val() != $("#checkPw").val()) {
 		alert("입력하신 새 비밀번호 불일치");
 		return false;
 	} else {
@@ -2532,7 +2812,7 @@ function showAccount(){
 	$("#paymentCard select").val('');
 	$("#paymentCard input").val('');
 }
-
+/*결제수단 무통장입금 선택*/
 function showCash(){
 	$("#paymentCard").css("display","none");
 	$("#paymentAccount").css("display","none");
@@ -2850,7 +3130,6 @@ function getRepairList(){
 			var ihtml = "";
 			debug(rData.length);
 			debug(rData);
-		
 			for (var i = 0; i < rData.length; i++) {
 				ihtml += "<tr class='is-line' data-fn-name='getrepairform(headElement)' data-key='"+rData[i].id+ "'data-itid='"+rData[i].itemId+"'data-productstate='"+rData[i].state+"'data-itname='"+rData[i].itemName+"' onclick='setHeadSeqRequest(this)'>";
 				ihtml += "<td>"+rData[i].id+"</td><td>"+rData[i].itemName+"</td>"+"<td>"+rData[i].state+"</td><td>"+rData[i].date+"</td>";
@@ -2859,7 +3138,6 @@ function getRepairList(){
 			debug(ihtml);
 			$("#repairList tbody").html(ihtml);
 			$('.loading').remove();
-			
 		},
 		error : function() {
 		},
@@ -2894,12 +3172,6 @@ function getrepairform(takeElement){
 			$("#itemName").val(rData.itemName);
 			$("#repairDate").val(rData.todayDate);
 			$("#repairContents").val(rData.repairContent);
-			
-			//
-			//if ($(".table-success").data("flag") == "true") {
-			//	$('#bt_addRepairResult').attr("disabled", true);
-			//}
-			
 		},
 		error : function() {
 			alert("폼으로 가져오기 실패!");
@@ -2909,15 +3181,15 @@ function getrepairform(takeElement){
 		}
 	});
 }
-
+/*사용부품*/
 function useParts(){
-	document.getElementById("useParts").value += $("#parts").val()+" ";
+	document.getElementById("useParts").value += $("#parts").val() + " ";
 }
-
+/*사용 부품 초기화*/
 function resetParts(){
 	document.getElementById("useParts").value = "";
 }
-
+/*점검내용 폼 초기화*/
 function resetForm(){
 	$("#repairContents").val('');
 	$("#useParts").val('');
@@ -2988,93 +3260,84 @@ function getPartsList(key){
 		}
 	});
 }
-
+/*페이지 로딩*/
 function redirectPage(url) {
-	window.location.href = url;
+	   window.location.href = url;
 }
 
 /* 수리내역 등록 */
 function addRepairResult(takeElement) {
-	debug(getUsePartsList("form[name=partsInputForm]"));
-	var requestURL = "addrepairresult.do";
-	/*var sData = getUsePartsList("#repairResultForm");*/
-	var sData = JSON.stringify({
-		repairId:$("#productId").val(),
-		itName:$("#itemName").val(),
-		productId:$("#productId").val(),
-		engineerId:$("#engineerId").val(),
-		engineerName:$("#engineerName").val(),
-		repairSort:$("#repairSort").val(),
-		state:$("#productId").val(),
-		repairDate:$("#repairDate").val(),
-		repairContent:$("#repairContents").val(),
-		list:JSON.parse(getUsePartsList("form[name=partsInputForm]"))
-	});
-	debug(sData);
-	debug(requestURL);
-	$.ajax({
-		type : "POST",
-		url : requestURL,
-		data : sData,
-		dataType : "JSON",
-		async: true,
-		contentType:'application/json;charset=UTF-8',
-		beforeSend: function() {
-			$("#content").append(loading.on);
-		},
-		success : function(rData) {
-		
-			switch (rData.result) {
-			case "success":
-				msgBox = new MsgWindow('plain');
-				msgBox.setMessage('점검등록성공!',' 점검결과가 정상적으로 등록되었습니다.');
-				msgBox.setButton('확인', "redirectPage('gorepairlist.do')");
-				msgBox.show();
-				break;
-			case "invalid":
-				var msg = new MsgWindow('invalid');
-				msg.setMessage('점검등록오류','입력한 점검결과가 존재하지 않거나, 변경할 수 없는 상태입니다.');
-				msg.setButton('확인','MsgWindow.hide(this)');
-				msg.show();
-				break;
-			case "violated":
-				var msg = new MsgWindow('violated');
-				msg.setMessage('정책위반','정책위반이 발생하였습니다.');
-				msg.setButton('확인','MsgWindow.hide(this)');
-				msg.show();
-				break;
-			case "network":
-				var msg = new MsgWindow('error');
-				msg.setMessage('네트워크 오류','네트워크에 문제가 있습니다. 관리자에게 문의하십시오.');
-				msg.setButton('확인','MsgWindow.hide(this)');
-				msg.show();
-				break;
-			}
-			
-			//document.location="gorepairlist.do";
-			
-		},
-		error : function() {
-			var msg = new MsgWindow('error');
-			msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
-			msg.setButton('확인','MsgWindow.hide(this)');
-			msg.show();
-		},
-		complete : function() {
-			$(".loading").remove();
-		}
-	});
+   debug(getUsePartsList("form[name=partsInputForm]"));
+   var requestURL = "addrepairresult.do";
+   /*var sData = getUsePartsList("#repairResultForm");*/
+   var sData = JSON.stringify({
+      repairId:$("#productId").val(),
+      itName:$("#itemName").val(),
+      productId:$("#productId").val(),
+      engineerId:$("#engineerId").val(),
+      engineerName:$("#engineerName").val(),
+      repairSort:$("#repairSort").val(),
+      state:$("#productId").val(),
+      repairDate:$("#repairDate").val(),
+      repairContent:$("#repairContents").val(),
+      list:JSON.parse(getUsePartsList("form[name=partsInputForm]"))
+   });
+   debug(sData);
+   debug(requestURL);
+   $.ajax({
+      type : "POST",
+      url : requestURL,
+      data : sData,
+      dataType : "JSON",
+      async: true,
+      contentType:'application/json;charset=UTF-8',
+      beforeSend: function() {
+         $("#content").append(loading.on);
+      },
+      success : function(rData) {
+      
+         switch (rData.result) {
+         case "success":
+            msgBox = new MsgWindow('plain');
+            msgBox.setMessage('점검등록성공!',' 점검결과가 정상적으로 등록되었습니다.');
+            msgBox.setButton('확인', 'redirectPage(gorepairlist.do)');
+            msgBox.show();
+            break;
+         case "invalid":
+            var msg = new MsgWindow('invalid');
+            msg.setMessage('점검등록오류','입력한 점검결과가 존재하지 않거나, 변경할 수 없는 상태입니다.');
+            msg.setButton('확인','MsgWindow.hide(this)');
+            msg.show();
+            break;
+         case "violated":
+            var msg = new MsgWindow('violated');
+            msg.setMessage('정책위반','정책위반이 발생하였습니다.');
+            msg.setButton('확인','MsgWindow.hide(this)');
+            msg.show();
+            break;
+         case "network":
+            var msg = new MsgWindow('error');
+            msg.setMessage('네트워크 오류','네트워크에 문제가 있습니다. 관리자에게 문의하십시오.');
+            msg.setButton('확인','MsgWindow.hide(this)');
+            msg.show();
+            break;
+         }
+         
+         //document.location="gorepairlist.do";
+         
+      },
+      error : function() {
+         var msg = new MsgWindow('error');
+         msg.setMessage('AJax 통신 오류','현재 서버와 연결이 원활하지 않아, 요청한 기능을 수행할 수 없습니다. 잠시후 다시 시도하여 주십시요.');
+         msg.setButton('확인','MsgWindow.hide(this)');
+         msg.show();
+      },
+      complete : function() {
+         $(".loading").remove();
+      }
+   });
 }
 
-function repairFormCheck(){
-	if(document.getElementById("repairSort") == null){
-		alert('분류미선택');
-		return;
-	}else if(document.getElementById("repairContents") == null){
-		alert('점검내역미입력');
-		return;
-	}
-}
 /* 우편번호 */
 function getPost() {
    new daum.Postcode({
@@ -3099,7 +3362,6 @@ function getPost() {
             }
             $("#tb_post").val(data.zonecode);
             $("#tb_addr").val(fullAddr);
-            document.getElementById('tb_addD').focus();
         }
     }).open();
 }
@@ -3170,6 +3432,7 @@ function getAllPartsList(){
 		}
 	});
 }
+
 /* 모든 수리결과 리스트 가져오기*/
 function getAllRepairResultList(){
 	var requestURL = "getallrepairresultlist.do";
@@ -3335,6 +3598,7 @@ function getRepairResultList(){
 			$(".loading").remove();
 		}
 	});
+
 }
 
 

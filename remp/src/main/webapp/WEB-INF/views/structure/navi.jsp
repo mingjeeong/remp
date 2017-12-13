@@ -1,6 +1,5 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
 	<a class="navbar-brand" href="#">ReMP</a>
@@ -19,7 +18,7 @@
 			</li>
 			<li class="left"><a class="sub-navi-link" data-module="member" href="javascript:void(0)" onclick="getNavSubMenu(this)">회원관리</a></li>
 			<li class="left"><a class="sub-navi-link" data-module="rental" href="javascript:void(0)" onclick="getNavSubMenu(this)">렌탈관리</a></li>
-			<li class="left"><a class="sub-navi-link" data-module="asset" href="javascript:void(0)" onclick="getNavSubMenu(this)">자산괸리</a></li>
+			<li class="left"><a class="sub-navi-link" data-module="asset" href="javascript:void(0)" onclick="getNavSubMenu(this)">자산관리</a></li>
 			<li class="left"><a class="sub-navi-link" data-module="EIS" href="javascript:void(0)" onclick="getNavSubMenu(this)">EIS</a></li>
 		</ul>
 	</div>
@@ -33,20 +32,14 @@
 <!-- 회원관리 -->
 <div id="member" class="sub-navi" style="display: none;" onmouseleave="setNavSubMenu(this)">
 	<ul class="navi-type">
-		<li class="left"><a class="sub-navi-link" href="goFindPw.do">비밀번호 찾기</a></li>
-		<li class="left"><a class="sub-navi-link" href="gochangepw.do">비밀번호변경</a></li>
+		<li class="left"><a class="sub-navi-link" href="gouserchange.do">내정보 변경</a></li>
 		<li class="left"><a class="sub-navi-link" href="goSetMemberInfo.do">내부사용자 정보수정</a></li>
 		<li class="left"><a class="sub-navi-link" href="goCompanionJoin.do">직원등록</a></li>
 		<li class="left"><a class="sub-navi-link" href="goCompanionInfo.do">직원수정</a></li>
 		<li class="left"><a class="sub-navi-link" href="goCusInfo.do">회원수정</a></li>
-		<li class="left"><a class="sub-navi-link" href="goError.do">레어</a></li>
-		<li class="left"><a class="sub-navi-link" href="goFoundError.do">404</a></li>
-		<li class="left"><a class="sub-navi-link" href="goRequestError.do">500</a></li>
-		<li class="left"><a class="sub-navi-link" href="goEtcError.do">etc</a></li>
-		<li class="left"><a class="sub-navi-link" href="goUserFoundError.do">User404</a></li>
-		<li class="left"><a class="sub-navi-link" href="goUserRequestError.do">User500</a></li>
-		<li class="left"><a class="sub-navi-link" href="goUserEtcError.do">Useretc</a></li>
 		<li class="left"><a class="sub-navi-link" href="goMain.do">메인</a></li>
+		<li class="left"><a class="sub-navi-link" href="goFindPw.do">비밀번호 찾기</a></li>
+		<li class="left"><a class="sub-navi-link" href="gochangepw.do">비밀번호변경</a></li>
 	</ul>
 </div>
 
@@ -55,6 +48,7 @@
 	<ul class="navi-type">
 		<li class="left"><a class="sub-navi-link" href="goAdvice.do">상담페이지</a></li>
 		<li class="left"><a class="sub-navi-link" href="goRefundRequest.do">회수조회</a></li>
+		<li class="left"><a class="sub-navi-link" href="goAsRequest.do">as 요청조회</a></li>
 		<li class="left"><a class="sub-navi-link" href="rentalmain.do">렌탈검색</a></li>
 	</ul>
 </div>
@@ -62,8 +56,6 @@
 <!-- 자산관리 -->
 <div id="asset" class="sub-navi" style="display: none;" onmouseleave="setNavSubMenu(this)">
 	<ul class="navi-type">
-		<li class="left"><a class="sub-navi-link" href="goAsRequest.do">as 요청조회</a></li>
-		<li class="left"><a class="sub-navi-link" href="goRefundRequest.do">회수요청조회</a></li>
 		<li class="left"><a class="sub-navi-link" href="goProductCare.do">자산관리</a></li>
 		<li class="left"><a class="sub-navi-link" href="goProductInsert.do">자산등록</a></li>
 		<li class="left"><a class="sub-navi-link" href="goinputrequest.do">입고요청조회</a></li>
@@ -75,8 +67,8 @@
 		<li class="left"><a class="sub-navi-link" href="gounstoreconfirm.do">출고관리</a></li>
 		<li class="left"><a class="sub-navi-link" href="goduediligence.do">실사계획등록</a></li>
 		<li class="left"><a class="sub-navi-link" href="gochangeduediligence.do">실사계획조회·변경</a></li>
-		<li class="left"><a class="sub-navi-link" href="goduediligenceresult.do">실사계획결과등록</a></li>
-		<li class="left"><a class="sub-navi-link" href="gochangeduediligenceresult.do">실사계획결과조회·변경</a></li>
+		<li class="left"><a class="sub-navi-link" href="goRequestError.do">실사계획결과등록</a></li>
+		<li class="left"><a class="sub-navi-link" href="goRequestError.do">실사계획결과조회·변경</a></li>
 	</ul>
 </div>
 

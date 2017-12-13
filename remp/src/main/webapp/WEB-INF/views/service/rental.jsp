@@ -1,13 +1,12 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 <form method="post" action="rentalpayment.do">
 <div align="center" style="margin-left: 20%; margin-right: 20%">
 	<!-- 상품정보 -->
 	<div>
-		<div align="center" class="left-w20" style="font-size: 20px; "  >상품정보</div>
+		<div align="center" class="left-w20" style="font-size: 20px;">상품정보</div>
 		<div class="left-w80">
-			<table class="table frame">
+			<table class="table frame is-line">
 			<thead>
 				<tr>
 					<th>상품정보</th>
@@ -17,7 +16,7 @@
 			</thead>
 			<tbody>
 				<tr>
-					<td><img src="resources/images/${dto.getImage()}" width="120px" height="90px">${dto.getCode()}&nbsp;${dto.getName()}
+					<td><img src="resources/images/${dto.getImage()}" width="120px">${dto.getCode()}&nbsp;${dto.getName()}
 						<input type="hidden" id="itemId" name="itemId" value="${dto.getId()}">
 						<input type="hidden" id="itemName" name="itemName" value="${dto.getName()}">
 						<input type="hidden" id="itemCode" name="itemCode" value="${dto.getCode()}"></td>
@@ -28,6 +27,7 @@
 		</table>
 		</div>
 	</div>
+	
 	<!-- 기간설정 -->
 	<div>
 		<div class="left-w20" style="font-size: 20px;" >기간설정</div>
@@ -36,6 +36,7 @@
 			<div class="left-w10">종료일</div><div class="left-w30"><input type="date" class="form-control" id="end" name="end" title="종료일" readonly></div>
 		</div>
 	</div>
+	
 	<!-- 배송지정보 -->
 	<div>
 		<div class="left-w20" style="font-size: 20px;" >배송지정보</div>
@@ -106,8 +107,9 @@
 	</table>
 		</div>
 	</div>
+	
 	<!-- 결제수단 -->
-	<div style="margin-bottom: 30px;">
+	<div>
 		<div class="left-w20" style="font-size: 20px;" >결제수단</div>
 		<div class="left-w80">
 			<div class="left-w30">
@@ -116,7 +118,8 @@
 			<div class="left-w30">
 				<input type="radio" name="rb_payment" id="rb_payment" onclick="showAccount()" value="account" required>계좌이체
 			</div>
-			<!--  <div class="left-w30">
+			<!--  
+			<div class="left-w30">
 				<input type="radio" name="rb_payment" id="rb_payment" onclick="showCash()" value="cash" required>현금결제
 			</div>
 			-->
@@ -161,7 +164,7 @@
 						<option value="SC은행">SC은행</option>
 					</select>
 				</div>
-				<div class="left-w30" >
+				<div class="left-w30">
 					<input type="text" class="form-control" name="accountNum" title="계좌번호" id="accountNum" placeholder="'-'없이 계좌번호 입력">
 				</div>
 			</div>

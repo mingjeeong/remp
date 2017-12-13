@@ -1,6 +1,5 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 <div align="center" style="margin-left: 20%; margin-right: 20%">
 	<span style="font-size: 20px; ">구매내역</span>
 	<table class="table frame" >

@@ -41,5 +41,10 @@ public interface CustomerService {
 	
 	/* ======================================== by 김재림 ================================================= */
 	public String getCustomerId(HashMap<String, String> memberinfo);
-	
+	public int setNewPassword(Map<String, String> jsonToMap);
+	public int setNewMobile(Map<String, String> jsonToMap);
+	public int setNewAddress(Map<String, String> jsonToMap);
+	public int setNewCard(Map<String, String> jsonToMap);
+	public int setNewAccount(Map<String, String> jsonToMap);
+	public Map<String, String> getUserInfo(String id);
 }

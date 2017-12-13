@@ -16,21 +16,15 @@
 	<table class="table table-striped table-hover table-bordered table-sm cursor is-line">
 		<thead class="thead-dark headfix">
 			<tr>
+				<th>요청일자</th>
+				<th>요청ID</th>
 				<th>자산ID</th>
-				<th>제품명</th>
-				<th>최초입고</th>
-				<th>최근출고</th>
-				<th>출고횟수</th>
-				<th>가격</th>
+				<th>품목ID</th>
+				<th>출고수량</th>
 				<th>출고</th>
 			</tr>
 		</thead>
 		<tbody id="productList">
-			<tr data-item-id="P123456789" data-item-name="윈나이 정수기"
-				data-item-entrydate="1999-12-01" data-item-recentdate="2017-11-15"
-				data-item-unstorecount="27" data-item-price="900000"
-				data-item-misc="">
-			</tr>
 		</tbody>
 	</table>
 </div>

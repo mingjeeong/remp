@@ -52,15 +52,55 @@ public abstract class ControllerAdapter {
 	@RequestMapping(value = "/", method = RequestMethod.GET)
 	public abstract ModelAndView home();
 	
+	/* 직원 메인 */
+	@RequestMapping(value = "goMain.do")
+	public abstract ModelAndView goMain();
+	
+	/*직원 ERROR 페이지 */
+	@RequestMapping(value = "goFoundError.do")
+	public abstract ModelAndView goFoundError();
+	@RequestMapping(value = "goRequestError.do")
+	public abstract ModelAndView goRequestError();
+	@RequestMapping(value = "goEtcError.do")
+	public abstract ModelAndView goEtcError();
+	
+	/*사용자 ERROR 페이지 */
+	@RequestMapping(value = "goUserFoundError.do")
+	public abstract ModelAndView goUserFoundError();
+	@RequestMapping(value = "goUserRequestError.do")
+	public abstract ModelAndView goUserRequestError();
+	@RequestMapping(value = "goUserEtcError.do")
+	public abstract ModelAndView goUserEtcError();
+	
+	/* 로그인 */
+	@RequestMapping(value = "goLogin.do")
+	public abstract ModelAndView goLogin();
+	
+	/* 회원가입  */
+	@RequestMapping(value = "goJoin.do")
+	public abstract ModelAndView goJoin();
+
+	/*관리자 직원 등록 */
+	@RequestMapping(value = "goCompanionJoin.do")
+	public abstract ModelAndView goCompanionJoin();
+	
+	/*관리자 직원 수정 */
+	@RequestMapping(value = "goCompanionInfo.do")
+	public abstract ModelAndView goCompanionInfo();
+
+	/*관리자 고객 수정 */
+	@RequestMapping(value = "goCusInfo.do")
+	public abstract ModelAndView goCusInfo();
+	
+	/* 회수페이지 이동 */
+	@RequestMapping(value = "goRefundRequest.do")
+	public abstract ModelAndView goRefundRequest();
+	
 	@RequestMapping(value = "gofindid.do")
 	public abstract ModelAndView gofindId();
 	
 	@RequestMapping(value = "findid.do")
 	public abstract ModelAndView findId(HashMap<String, String> memberinfo);
-	
-	@RequestMapping("gologin.do")
-	public abstract ModelAndView goLogin(String customerId);
-	
 	//---------------------- 유틸리티 --------------------------------
 	//업무시스템 템플릿
 	protected ModelAndView getPlainPage(String content) {

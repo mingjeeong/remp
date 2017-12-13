@@ -21,7 +21,7 @@
 </tr>
 <tr>
 <td align="center">
-<img alt="홈으로" src="resources/images/house.png" style="height: 70px; width: 80px;" onclick="alert('aaa')">
+<img alt="홈으로" src="resources/images/house.png" style="height: 70px; width: 80px;" onclick="location.href='goMain.do'">
 </td>
 </tr>
 </table>

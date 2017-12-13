@@ -40,7 +40,7 @@ public class BuyDao {
 		Connection con = null;
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
-		String sql = "select OU_ID req_id, to_char(OU_OUT_DAY, 'yyyy-MM-dd') req_trans_date from OUTPUT where regexp_like(ou_id||' '||pr_id, ?) and ou_complete in('','n','N')";
+		String sql = "select OU_ID req_id, to_char(OU_OUT_DAY, 'yyyy-MM-dd') req_trans_date, it_id from OUTPUT where regexp_like(ou_id||' '||pr_id, ?) and ou_complete in('','n','N')";
 		
 		try {
 			con = factoryDao.getConnection();
@@ -51,6 +51,7 @@ public class BuyDao {
 				Map<String, String> item = new HashMap<>();
 				item.put("reqId", rs.getString("req_id"));
 				item.put("reqTransDate", rs.getString("req_trans_date"));
+				item.put("itemId", rs.getString("it_id"));
 				returnValue.add(item);
 			}
 			

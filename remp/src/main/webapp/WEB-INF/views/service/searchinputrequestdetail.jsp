@@ -1,9 +1,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page session="false" %>
 
 <!-- 입고요청조회 -->
-<!-- detail -->
 
 <div class="item_wrapper">
 	<div class="left-w20">
@@ -31,8 +29,6 @@
 			</tr>
 		</thead>
 		<tbody id="inputList">
-			<tr>
-			</tr>
 		</tbody>
 </table>
 </div>

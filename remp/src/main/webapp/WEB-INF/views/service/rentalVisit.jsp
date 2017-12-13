@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
-<%@ page session="false" %>
+
+<h3 align="center">회수</h3>
 
 <div style="clear: both; margin-left:5%; margin-bottom:20px; width: 90%">
    <ul class="nav nav-tabs">
